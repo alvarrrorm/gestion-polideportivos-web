@@ -1,0 +1,598 @@
+/* Recuperacion.css */
+.recuperacion-overlay {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.recuperacion-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.form-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.form-container-small {
+  max-width: 320px;
+  padding: 1.5rem;
+}
+
+.form-container-medium {
+  max-width: 500px;
+  padding: 2rem;
+}
+
+.form-container-large {
+  max-width: 550px;
+  padding: 2.5rem;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark-mode-toggle:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.header-center {
+  flex: 1;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.title-small {
+  font-size: 1.5rem;
+}
+
+.title-medium {
+  font-size: 1.75rem;
+}
+
+.title-large {
+  font-size: 2rem;
+}
+
+.subtitle {
+  text-align: center;
+  margin: 0 0 2rem 0;
+  line-height: 1.5;
+}
+
+.subtitle-small {
+  font-size: 0.875rem;
+}
+
+.subtitle-medium {
+  font-size: 1rem;
+}
+
+.subtitle-large {
+  font-size: 1.125rem;
+}
+
+/* Indicador de pasos */
+.pasos-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.paso-linea {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.paso-circulo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.paso-texto {
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.paso-conector {
+  width: 60px;
+  height: 2px;
+  transition: background-color 0.3s ease;
+}
+
+/* Formulario */
+.recuperacion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input-small {
+  padding: 0.75rem 0.875rem;
+  font-size: 0.9375rem;
+}
+
+.input-medium {
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+}
+
+.input-large {
+  padding: 1rem 1.125rem;
+  font-size: 1.0625rem;
+}
+
+.input:focus {
+  border-color: inherit;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.password-container {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  padding-right: 3rem;
+}
+
+.eye-button {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.eye-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Botones */
+.button {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.button-small {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.button-medium {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+}
+
+.button-large {
+  padding: 1rem 1.75rem;
+  font-size: 1.0625rem;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.4) !important;
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.button-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.button-text {
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.button-text-small {
+  font-size: 0.9375rem;
+}
+
+.button-text-medium {
+  font-size: 1rem;
+}
+
+.button-text-large {
+  font-size: 1.0625rem;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.loading-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.reenviar-button {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  text-align: center;
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.reenviar-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.reenviar-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Botón secundario */
+.secondary-button {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: transparent;
+  border: 2px solid;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.secondary-button-small {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.secondary-button-medium {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+}
+
+.secondary-button-large {
+  padding: 1rem 1.75rem;
+  font-size: 1.0625rem;
+}
+
+.secondary-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+.secondary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.secondary-button-text {
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.secondary-button-text-small {
+  font-size: 0.9375rem;
+}
+
+.secondary-button-text-medium {
+  font-size: 1rem;
+}
+
+.secondary-button-text-large {
+  font-size: 1.0625rem;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.divider-small {
+  margin: 1.25rem 0;
+}
+
+.divider-medium {
+  margin: 1.5rem 0;
+}
+
+.divider-large {
+  margin: 1.75rem 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+}
+
+.divider-text {
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+/* Mensajes de error y éxito */
+.error-container,
+.exito-container {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-icon,
+.exito-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.error-text,
+.exito-text {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  flex: 1;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .recuperacion-overlay {
+    padding: 0.5rem;
+  }
+  
+  .form-container-small,
+  .form-container-medium,
+  .form-container-large {
+    padding: 1.5rem;
+    border-radius: 1rem;
+  }
+  
+  .title-small,
+  .title-medium,
+  .title-large {
+    font-size: 1.5rem;
+  }
+  
+  .subtitle-small,
+  .subtitle-medium,
+  .subtitle-large {
+    font-size: 0.875rem;
+  }
+  
+  .paso-circulo {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .paso-conector {
+    width: 50px;
+  }
+}
+
+@media (max-width: 375px) {
+  .form-container {
+    padding: 1.25rem;
+  }
+  
+  .title {
+    font-size: 1.375rem;
+  }
+  
+  .subtitle {
+    font-size: 0.8125rem;
+  }
+  
+  .paso-circulo {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .paso-conector {
+    width: 40px;
+  }
+  
+  .input,
+  .button,
+  .secondary-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+}
+
+/* Contenedor de fortaleza de contraseña */
+.password-strength-info {
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: rgba(156, 163, 175, 0.1);
+}
+
+/* Asegurar que los inputs no se salgan del contenedor */
+input[type="email"],
+input[type="text"],
+input[type="password"] {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Mejorar accesibilidad */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #4F46E5;
+  outline-offset: 2px;
+}
+
+/* Asegurar que los botones sean accesibles en dispositivos táctiles */
+button {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Mejorar la legibilidad en modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .recuperacion-overlay:not(.dark-mode) .form-container {
+    background-color: #1E293B;
+    color: #F1F5F9;
+  }
+}

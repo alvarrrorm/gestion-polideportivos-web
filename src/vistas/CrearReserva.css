@@ -1,0 +1,25 @@
+.crear-reserva-container {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.crear-reserva-content {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .crear-reserva-content {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .crear-reserva-content {
+    padding: 10px;
+  }
+}

@@ -1,0 +1,653 @@
+.formulario-reserva-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 30px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.formulario-titulo {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1F2937;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.formulario-subtitulo {
+  font-size: 16px;
+  color: #6B7280;
+  text-align: center;
+  margin-bottom: 30px;
+  font-weight: 500;
+}
+
+.error-container {
+  background-color: #FEE2E2;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border-left: 4px solid #DC2626;
+  color: #DC2626;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.alert-container {
+  background-color: #FEF3CD;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border-left: 4px solid #F59E0B;
+  color: #92400E;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.reserva-form {
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1976D2;
+}
+
+.user-container {
+  background-color: #f1f5f9;
+  border-radius: 12px;
+  padding: 14px 20px;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.select-wrapper {
+  border: 1px solid #1976D2;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.form-select {
+  width: 100%;
+  height: 50px;
+  padding: 0 15px;
+  border: none;
+  background-color: transparent;
+  font-size: 16px;
+  color: #1976D2;
+  outline: none;
+  cursor: pointer;
+}
+
+.form-select:disabled {
+  color: #888;
+  cursor: not-allowed;
+}
+
+.form-input {
+  width: 100%;
+  height: 50px;
+  padding: 0 15px;
+  border: 1px solid #1976D2;
+  border-radius: 10px;
+  font-size: 16px;
+  color: #1976D2;
+  outline: none;
+  background-color: #ffffff;
+}
+
+.field-error {
+  color: #DC2626;
+  font-size: 12px;
+  margin-top: 5px;
+  margin-left: 10px;
+}
+
+.info-polideportivo {
+  background-color: #e0f2fe;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border-left: 4px solid #0284c7;
+  color: #0369a1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.time-pickers-container {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.time-picker {
+  flex: 1;
+}
+
+.no-horas-text {
+  color: #DC2626;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+.validando-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  margin-bottom: 15px;
+  color: #1976D2;
+  font-size: 14px;
+}
+
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #1976D2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+.checkbox-container {
+  margin-bottom: 24px;
+  padding: 10px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #1976D2;
+  border-radius: 4px;
+  margin-right: 10px;
+  position: relative;
+}
+
+.checkbox-input:checked + .checkbox-custom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #1976D2;
+  font-weight: bold;
+}
+
+.checkbox-text {
+  font-size: 16px;
+  color: #1976D2;
+  font-weight: 500;
+}
+
+.precio-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.precio-container {
+  background-color: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.precio-titulo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.desglose {
+  margin-bottom: 12px;
+}
+
+.desglose-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.total-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.total-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.total-precio {
+  font-size: 24px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.submit-button {
+  width: 100%;
+  background-color: #1976D2;
+  color: white;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #1565c0;
+}
+
+.submit-button:disabled,
+.button-disabled {
+  background-color: #90caf9;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-indicator {
+  padding: 15px;
+  text-align: center;
+  color: #1976D2;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-container {
+  background-color: white;
+  border-radius: 20px;
+  padding: 25px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.modal-message {
+  font-size: 16px;
+  color: #6B7280;
+  text-align: center;
+  margin-bottom: 25px;
+  line-height: 22px;
+}
+
+.modal-button {
+  background-color: #1976D2;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.modal-button:hover {
+  background-color: #1565c0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .time-pickers-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .formulario-reserva-container {
+    padding: 15px;
+  }
+  
+  .formulario-titulo {
+    font-size: 24px;
+  }
+}
+/* Header con flecha de volver */
+.header-with-back {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.back-button-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #4F46E5;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  min-width: 100px;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  flex-shrink: 0;
+}
+
+.back-button-header:hover {
+  background: #4338CA;
+  transform: translateY(-2px);
+}
+
+.back-arrow {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.back-text {
+  white-space: nowrap;
+}
+
+.header-content {
+  flex: 1;
+}
+
+/* Ajustar el título y subtítulo */
+.header-content .formulario-titulo {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.header-content .formulario-subtitulo {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Responsive para el botón de volver */
+@media (max-width: 768px) {
+  .header-with-back {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .back-button-header {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .back-button-header {
+    min-width: auto;
+    padding: 8px 12px;
+  }
+  
+  .back-text {
+    display: none; /* Oculta el texto en móviles pequeños */
+  }
+  
+  .back-button-header {
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  
+  .back-arrow {
+    font-size: 20px;
+  }
+}
+
+.info-reserva-actual {
+  background-color: #e8f4fd;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 5px;
+  font-size: 13px;
+  color: #1976D2;
+}
+
+.reserva-info {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 4px solid #1976D2;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.error-estado {
+  background-color: #ffeaea;
+  border-left: 4px solid #ff4444;
+}
+
+.precio-anterior-container {
+  display: flex;
+  justify-content: space-between;
+  background-color: #fff3cd;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  border: 1px solid #ffeaa7;
+}
+
+.precio-anterior-label {
+  color: #856404;
+  font-weight: 500;
+}
+
+.precio-anterior-valor {
+  color: #856404;
+  text-decoration: line-through;
+  font-weight: 600;
+}
+
+.total-precio-cambiado {
+  color: #dc3545;
+  animation: pulse 1.5s infinite;
+}
+
+.nota-cambio {
+  font-size: 12px;
+  color: #dc3545;
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Estilos para pistas en mantenimiento */
+.pista-no-disponible-alert {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 10px;
+  margin: 10px 0;
+  color: #92400e;
+  font-weight: 500;
+  text-align: center;
+}
+
+.total-precio-no-disponible {
+  color: #dc2626 !important;
+  text-decoration: line-through;
+}
+
+/* Información de pistas disponibles */
+.info-pistas-disponibles {
+  background-color: #d1fae5;
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 10px 0 20px;
+  color: #065f46;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Visualización de horas ocupadas */
+.horas-ocupadas-info {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.horas-ocupadas-titulo {
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.horas-ocupadas-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bloque-ocupado {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Indicadores de disponibilidad */
+.no-horas-text {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* Mejoras para selects */
+.form-select:disabled {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.form-select option:disabled {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Loading spinner mejorado */
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #1976D2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Botón deshabilitado mejorado */
+.button-disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+}
+
+.button-disabled:hover {
+  background-color: #059669 !important;
+  transform: none !important;
+}
+
+/* Precio cambiado */
+.total-precio-cambiado {
+  color: #059669;
+  font-weight: bold;
+  animation: pulse 1.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

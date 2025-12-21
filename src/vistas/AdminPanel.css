@@ -1,0 +1,2597 @@
+
+
+
+:root {
+  /* Colores principales */
+  --primary-color: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --secondary-color: #7c3aed;
+  --accent-color: #06b6d4;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --info-color: #8b5cf6;
+  
+  /* Fondos */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  
+  /* Textos */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  
+  /* Bordes */
+  --border-color: #e2e8f0;
+  --border-light: #f1f5f9;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  
+  /* Bordes redondeados */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  
+  /* Transiciones */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Z-index */
+  --z-modal: 2000;
+  --z-header: 100;
+}
+
+
+
+/* ============ RESET Y ESTILOS BASE ============ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--bg-secondary);
+  min-height: 100vh;
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============ CONTENEDOR PRINCIPAL ============ */
+.admin-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 32px 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ============ HEADER ============ */
+.header {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: 36px 48px;
+  margin-bottom: 40px;
+  box-shadow: var(--shadow-xl);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 1400px;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header Top */
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  width: 100%;
+  position: relative;
+  gap: 20px;
+}
+
+.back-button {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 14px 24px;
+  border-radius: var(--radius-lg);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  max-width: 160px;
+}
+
+.back-button:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+}
+
+.welcome-text {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.5px;
+  flex-grow: 1;
+  text-align: center;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.username {
+  font-size: 18px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 32px;
+  font-weight: 500;
+  width: 100%;
+}
+
+/* ============ TABS DE NAVEGACIÓN ============ */
+.tabs-container {
+  display: flex;
+  gap: 12px;
+  background-color: var(--bg-secondary);
+  padding: 12px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 800px;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+}
+
+.tab-button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 18px 28px;
+  border-radius: var(--radius-lg);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  min-height: 60px;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.tab-button:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.tab-button.active-tab {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: var(--shadow-lg);
+  font-weight: 700;
+}
+
+.tab-button.active-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  background: white;
+  border-radius: 2px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============ CONTENIDO PRINCIPAL ============ */
+.content {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  margin-bottom: 40px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 1400px;
+}
+
+.tab-content {
+  padding: 40px 48px;
+  width: 100%;
+}
+
+.list-header {
+  margin-bottom: 40px;
+  width: 100%;
+  text-align: center;
+}
+
+.seccion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+.seccion-titulo {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.seccion-titulo::before {
+  font-size: 24px;
+}
+
+.seccion-titulo[data-tab="polideportivos"]::before { content: "🏟️"; }
+.seccion-titulo[data-tab="pistas"]::before { content: "🎾"; }
+.seccion-titulo[data-tab="reservas"]::before { content: "📋"; }
+
+.boton-agregar {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: var(--radius-xl);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-lg);
+  min-height: 56px;
+}
+
+.boton-agregar:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-2xl);
+}
+
+/* ============ POLIDEPORTIVOS ============ */
+.list-content.polideportivos-grid {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 550px));
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.polideportivo-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-2xl);
+  padding: 36px;
+  border: 2px solid var(--border-color);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 280px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+
+.polideportivo-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background-color: var(--primary-color);
+}
+
+.polideportivo-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-2xl);
+  border-color: var(--primary-light);
+}
+
+.polideportivo-header {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.polideportivo-info {
+  width: 100%;
+}
+
+.polideportivo-nombre {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  line-height: 1.3;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.polideportivo-nombre::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background-color: var(--accent-color);
+  border-radius: 2px;
+}
+
+.polideportivo-direccion {
+  font-size: 17px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.6;
+  padding: 14px 18px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.polideportivo-card:hover .polideportivo-direccion {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent-color);
+}
+
+.polideportivo-telefono {
+  font-size: 15px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.polideportivo-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.pistas-count-container {
+  background-color: var(--accent-color);
+  padding: 12px 24px;
+  border-radius: var(--radius-xl);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.boton-eliminar {
+  background-color: var(--bg-primary);
+  border: 2px solid var(--danger-color);
+  color: var(--danger-color);
+  padding: 16px 28px;
+  border-radius: var(--radius-xl);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+  justify-content: center;
+  min-height: 56px;
+  box-shadow: var(--shadow-md);
+  margin: 0 auto;
+}
+
+.boton-eliminar:hover {
+  background-color: var(--danger-color);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+
+/* ============ FILTROS ============ */
+.filtro-container {
+  background-color: var(--bg-secondary);
+  padding: 28px 32px;
+  border-radius: var(--radius-xl);
+  margin-bottom: 32px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition);
+}
+
+.filtro-container:hover {
+  box-shadow: var(--shadow-xl);
+}
+
+.filtro-label {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.3px;
+}
+
+.filtro-label::before {
+  content: "🏟️";
+  font-size: 18px;
+}
+
+.filtro-botones {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.filtro-boton {
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  padding: 14px 24px;
+  border-radius: var(--radius-lg);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  box-shadow: var(--shadow-sm);
+}
+
+.filtro-boton:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.filtro-boton-activo {
+  background-color: var(--primary-color);
+  border-color: transparent;
+  color: white;
+  box-shadow: var(--shadow-lg);
+  font-weight: 700;
+}
+
+.filtro-boton-activo:hover {
+  background-color: var(--primary-dark);
+  color: white;
+  border-color: transparent;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* ============ PISTAS ============ */
+.list-content:not(.polideportivos-grid) {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 480px));
+  justify-content: center;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pista-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  border: 2px solid var(--border-color);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 260px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.pista-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-2xl);
+  border-color: var(--accent-color);
+}
+
+.pista-header {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pista-info {
+  width: 100%;
+}
+
+.pista-nombre {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.pista-nombre::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background-color: var(--accent-color);
+  border-radius: 2px;
+}
+
+.pista-detalles {
+  font-size: 16px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.pista-card:hover .pista-detalles {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent-color);
+}
+
+.estado-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--bg-tertiary);
+  padding: 12px 22px;
+  border-radius: var(--radius-xl);
+  border: 2px solid var(--border-color);
+  justify-content: center;
+  width: fit-content;
+  margin: 0 auto;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.pista-card:hover .estado-container {
+  border-color: var(--success-color);
+  box-shadow: var(--shadow-md);
+}
+
+.estado-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--success-color);
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.estado-indicator.mantenimiento {
+  background-color: var(--warning-color);
+  animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+.estado-texto {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+
+.acciones-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.boton-accion {
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 16px 10px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 90px;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  box-shadow: var(--shadow-sm);
+}
+
+.boton-accion:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.boton-accion.eliminar {
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+.boton-accion.eliminar:hover {
+  background-color: var(--danger-color);
+  border-color: transparent;
+  color: white;
+  transform: translateY(-3px);
+}
+
+.boton-accion::after {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.boton-accion:nth-child(1)::after { content: "🔧"; }
+.boton-accion:nth-child(2)::after { content: "✏️"; }
+.boton-accion.eliminar::after { content: "🗑️"; }
+
+/* ============ RESERVAS ============ */
+.reserva-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  border: 2px solid var(--border-color);
+  transition: var(--transition);
+  position: relative;
+  min-height: 280px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.reserva-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background-color: var(--success-color);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.reserva-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-2xl);
+  border-color: var(--info-color);
+}
+
+.reserva-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  gap: 20px;
+}
+
+.reserva-info-principal {
+  flex: 1;
+}
+
+.reserva-nombre-pista {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reserva-nombre-pista::before {
+  content: "🎾";
+  font-size: 20px;
+}
+
+.reserva-tipo {
+  font-size: 15px;
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  display: inline-block;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+}
+
+.estado-reserva {
+  padding: 10px 22px;
+  border-radius: var(--radius-xl);
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background-color: var(--success-color);
+  min-width: 140px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.estado-reserva.cancelada {
+  background-color: var(--danger-color);
+}
+
+.estado-reserva.pendiente {
+  background-color: var(--warning-color);
+}
+
+.reserva-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+  padding: 28px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.reserva-card:hover .reserva-info {
+  background-color: var(--bg-secondary);
+  border-color: var(--info-color);
+}
+
+.reserva-texto {
+  font-size: 15px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+  padding: 12px 16px;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.reserva-texto:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--primary-light);
+}
+
+.reserva-ludoteca {
+  color: var(--success-color);
+  font-weight: 600;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 12px 18px;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.boton-cancelar {
+  background-color: var(--bg-primary);
+  border: 2px solid var(--warning-color);
+  color: var(--warning-color);
+  padding: 16px 28px;
+  border-radius: var(--radius-xl);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  box-shadow: var(--shadow-md);
+}
+
+.boton-cancelar:hover {
+  background-color: var(--warning-color);
+  color: white;
+  border-color: transparent;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ============ MODALES ============ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+.modal-content {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-2xl);
+  padding: 48px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-2xl);
+  border: 1px solid var(--border-color);
+  position: relative;
+  animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-origin: center;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background-color: var(--primary-color);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+}
+
+.modal-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 32px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border-color);
+  position: relative;
+}
+
+.modal-title::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: var(--accent-color);
+  border-radius: 2px;
+}
+
+.modal-subtitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 8px;
+  background-color: var(--bg-tertiary);
+  padding: 12px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.modal-info {
+  font-size: 15px;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-label::before {
+  font-size: 16px;
+}
+
+.form-label[for="nombre"]::before { content: "🏷️"; }
+.form-label[for="tipo"]::before { content: "🎾"; }
+.form-label[for="precio"]::before { content: "💰"; }
+.form-label[for="polideportivo"]::before { content: "🏟️"; }
+.form-label[for="direccion"]::before { content: "📍"; }
+.form-label[for="telefono"]::before { content: "📞"; }
+
+.modal-input, .modal-select {
+  width: 100%;
+  padding: 18px 22px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.modal-input:focus, .modal-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  transform: translateY(-2px);
+}
+
+.modal-input:hover, .modal-select:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+.modal-input::placeholder {
+  color: var(--text-tertiary);
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.modal-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 20px center;
+  background-size: 20px;
+  padding-right: 56px;
+  cursor: pointer;
+}
+
+.modal-select option {
+  padding: 12px;
+  font-size: 15px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.modal-select option:checked {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 600;
+}
+
+.precio-container {
+  position: relative;
+}
+
+.precio-suffix {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  pointer-events: none;
+  background-color: var(--bg-tertiary);
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.modal-input.precio-input {
+  padding-right: 70px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 40px;
+  width: 100%;
+}
+
+.modal-button {
+  flex: 1;
+  padding: 18px 24px;
+  border-radius: var(--radius-xl);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 58px;
+  box-shadow: var(--shadow-md);
+}
+
+.modal-button-cancel {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
+}
+
+.modal-button-cancel:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--text-tertiary);
+}
+
+.modal-button-save {
+  background-color: var(--primary-color);
+  color: white;
+  border: 2px solid transparent;
+}
+
+.modal-button-save:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-button-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.error-texto {
+  color: var(--danger-color);
+  font-size: 14px;
+  font-weight: 600;
+  margin: -12px 0 20px 0;
+  padding: 16px 20px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--danger-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-3px); }
+  40%, 60% { transform: translateX(3px); }
+}
+
+.error-texto::before {
+  content: "⚠️";
+  font-size: 18px;
+}
+
+.modal-content.editar-precio {
+  max-width: 440px;
+}
+
+.precio-edicion-container {
+  background-color: var(--bg-tertiary);
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  border: 2px solid var(--border-color);
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.precio-actual {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.precio-valor-actual {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.precio-valor-actual::before {
+  content: "💰";
+  font-size: 28px;
+}
+
+.precio-nuevo-input {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  padding: 20px;
+  background-color: var(--bg-primary);
+  border: 3px solid var(--accent-color);
+}
+
+.modal-content.confirmacion {
+  max-width: 440px;
+  text-align: center;
+}
+
+.confirmacion-icono {
+  font-size: 64px;
+  margin-bottom: 24px;
+  display: block;
+  animation: pulse 2s infinite;
+}
+
+.confirmacion-mensaje {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.confirmacion-detalle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  line-height: 1.6;
+  background-color: var(--bg-tertiary);
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+/* ============ TABLA DE USUARIOS ============ */
+.usuarios-table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.usuarios-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.usuarios-table th {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.usuarios-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  vertical-align: middle;
+  color: var(--text-secondary);
+}
+
+.usuario-row:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.rol-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+  min-width: 80px;
+}
+
+.rol-admin {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.rol-user {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.acciones-usuario {
+  display: flex;
+  gap: 8px;
+}
+
+.boton-hacer-admin {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.boton-hacer-admin:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.boton-quitar-admin {
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.boton-quitar-admin:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.boton-quitar-admin:disabled {
+  background-color: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.modal-usuario-info,
+.modal-rol-info,
+.modal-advertencia {
+  margin-bottom: 15px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+}
+
+.modal-usuario-info {
+  background-color: var(--bg-tertiary);
+  border-left: 4px solid var(--primary-color);
+  color: var(--text-secondary);
+}
+
+.modal-rol-info {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-left: 4px solid var(--warning-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+
+.modal-advertencia {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid var(--danger-color);
+  color: var(--danger-color);
+}
+
+/* ============ ESTADOS VACÍOS ============ */
+.lista-vacia-container {
+  text-align: center;
+  padding: 60px 24px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-xl);
+  border: 3px dashed var(--border-color);
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+}
+
+.lista-vacia-container:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.lista-vacia {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.lista-vacia-subtexto {
+  font-size: 15px;
+  color: var(--text-tertiary);
+  margin-bottom: 24px;
+  line-height: 1.5;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============ LOADING ============ */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 24px;
+  width: 100%;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ============ ERRORES ============ */
+.error-container {
+  text-align: center;
+  padding: 60px 24px;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  max-width: 600px;
+  margin: 40px auto;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-color);
+}
+
+.error-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.btn-reintentar,
+.btn-login {
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+}
+
+.btn-reintentar {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-login {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-reintentar:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-login:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* ============ BOTONES EN ESTADO DE CARGA ============ */
+.boton-accion.cargando,
+.boton-agregar.cargando,
+.modal-button.cargando {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.boton-accion.cargando::after,
+.boton-agregar.cargando::after,
+.modal-button.cargando::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.boton-eliminar.cargando::after,
+.boton-cancelar.cargando::after {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
+/* ============ RESPONSIVE COMPLETO ============ */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
+  .admin-container {
+    padding: 28px 32px;
+  }
+  
+  .header {
+    padding: 32px;
+  }
+  
+  .welcome-text {
+    font-size: 28px;
+  }
+  
+  .tab-content {
+    padding: 32px;
+  }
+}
+
+/* Móvil Grande (576px - 768px) */
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 20px 24px;
+  }
+  
+  .header {
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .header-top {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .back-button {
+    position: relative;
+    left: 0;
+    width: auto;
+    max-width: 200px;
+    margin: 0;
+    order: 2;
+  }
+  
+  .welcome-text {
+    font-size: 24px;
+    order: 1;
+    text-align: center;
+    width: 100%;
+    line-height: 1.3;
+    margin: 0;
+    padding: 0 10px;
+  }
+  
+  .username {
+    font-size: 16px;
+    margin-bottom: 24px;
+    order: 3;
+    margin-top: 8px;
+  }
+  
+  .tabs-container {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+  
+  .tab-button {
+    width: 100%;
+    max-width: none;
+    min-width: auto;
+    padding: 16px;
+    min-height: 54px;
+    font-size: 15px;
+  }
+  
+  .tab-content {
+    padding: 24px;
+  }
+  
+  .seccion-header {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .seccion-titulo {
+    font-size: 22px;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .boton-agregar {
+    width: 100%;
+    max-width: 300px;
+    padding: 14px 24px;
+    font-size: 15px;
+    margin: 0 auto;
+  }
+  
+  /* Grids */
+  .list-content.polideportivos-grid,
+  .list-content:not(.polideportivos-grid) {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 100%;
+  }
+  
+  .polideportivo-card,
+  .pista-card,
+  .reserva-card {
+    padding: 24px;
+    min-height: auto;
+  }
+  
+  .polideportivo-nombre {
+    font-size: 22px;
+  }
+  
+  .polideportivo-direccion {
+    font-size: 15px;
+    padding: 12px 16px;
+  }
+  
+  .polideportivo-stats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .pistas-count-container {
+    align-self: center;
+  }
+  
+  .acciones-container {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .boton-accion {
+    min-height: 75px;
+    padding: 14px;
+  }
+  
+  /* Filtros */
+  .filtro-container {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .filtro-botones {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  
+  .filtro-boton {
+    min-width: 150px;
+    flex-shrink: 0;
+    padding: 12px 18px;
+    font-size: 14px;
+  }
+  
+  /* Reservas */
+  .reserva-info {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 16px;
+  }
+  
+  .reserva-texto {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  
+  .estado-reserva {
+    min-width: 120px;
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .boton-cancelar,
+  .boton-eliminar {
+    padding: 14px 20px;
+    min-height: 52px;
+    font-size: 15px;
+  }
+  
+  /* Modales responsive */
+  .modal-overlay {
+    padding: 16px;
+    align-items: flex-end;
+  }
+  
+  .modal-content {
+    padding: 32px 24px;
+    max-height: 85vh;
+    border-radius: var(--radius-2xl) var(--radius-2xl) var(--radius-xl) var(--radius-xl);
+    animation: modalSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  
+  @keyframes modalSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .modal-title {
+    font-size: 24px;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .modal-input, .modal-select {
+    padding: 16px 20px;
+    font-size: 15px;
+  }
+  
+  .modal-buttons {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  
+  .modal-button {
+    width: 100%;
+    padding: 16px 20px;
+    min-height: 54px;
+  }
+  
+  .precio-edicion-container {
+    padding: 24px;
+  }
+  
+  .precio-valor-actual {
+    font-size: 32px;
+  }
+  
+  /* Tabla de usuarios */
+  .usuarios-table-container {
+    margin: 10px -16px;
+    padding: 10px;
+    border-radius: 0;
+  }
+  
+  .usuarios-table {
+    min-width: 650px;
+  }
+  
+  .usuario-row td {
+    padding: 10px 8px;
+  }
+  
+  .acciones-usuario {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .boton-hacer-admin,
+  .boton-quitar-admin {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  /* Áreas táctiles */
+  .tab-button,
+  .boton-agregar,
+  .boton-eliminar,
+  .boton-cancelar,
+  .boton-accion,
+  .filtro-boton,
+  .modal-button {
+    min-height: 44px;
+  }
+  
+  .tabs-container {
+    gap: 8px;
+  }
+  
+  .filtro-botones {
+    gap: 8px;
+  }
+  
+  .modal-buttons {
+    gap: 10px;
+  }
+}
+
+/* Móvil Pequeño (menos de 576px) */
+@media (max-width: 576px) {
+  .admin-container {
+    padding: 16px 20px;
+  }
+  
+  .header {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .welcome-text {
+    font-size: 22px;
+    padding: 0 5px;
+  }
+  
+  .back-button {
+    padding: 12px 20px;
+    font-size: 14px;
+    max-width: 180px;
+  }
+  
+  .username {
+    font-size: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .tab-content {
+    padding: 20px;
+  }
+  
+  .seccion-titulo {
+    font-size: 20px;
+  }
+  
+  .polideportivo-card,
+  .pista-card,
+  .reserva-card {
+    padding: 20px;
+  }
+  
+  .polideportivo-nombre {
+    font-size: 20px;
+  }
+  
+  .polideportivo-direccion {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+  
+  .pista-nombre,
+  .reserva-nombre-pista {
+    font-size: 20px;
+  }
+  
+  .boton-agregar {
+    padding: 12px 20px;
+    min-height: 50px;
+    font-size: 14px;
+  }
+  
+  .pista-detalles,
+  .polideportivo-direccion,
+  .reserva-texto {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+  
+  .estado-container {
+    padding: 10px 16px;
+  }
+  
+  .estado-texto {
+    font-size: 13px;
+  }
+  
+  .list-content.polideportivos-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Modales pequeñas */
+  .modal-content {
+    padding: 28px 20px;
+    max-width: 100%;
+  }
+  
+  .modal-title {
+    font-size: 22px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .modal-subtitle {
+    font-size: 16px;
+    padding: 10px 16px;
+  }
+  
+  .modal-info {
+    font-size: 14px;
+    padding: 8px 14px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .error-texto {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  
+  .confirmacion-icono {
+    font-size: 56px;
+  }
+  
+  .confirmacion-mensaje {
+    font-size: 18px;
+  }
+  
+  .confirmacion-detalle {
+    font-size: 15px;
+    padding: 16px;
+  }
+  
+  /* Tabla de usuarios móvil pequeño */
+  .usuarios-table {
+    min-width: 600px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .modal-title {
+    font-size: 18px;
+  }
+}
+
+/* Móvil Muy Pequeño (menos de 400px) */
+@media (max-width: 400px) {
+  .admin-container {
+    padding: 12px 16px;
+  }
+  
+  .header {
+    padding: 16px;
+  }
+  
+  .welcome-text {
+    font-size: 20px;
+  }
+  
+  .back-button {
+    padding: 10px 16px;
+    font-size: 13px;
+    max-width: 160px;
+  }
+  
+  .tab-button {
+    padding: 14px 12px;
+    font-size: 14px;
+    gap: 8px;
+  }
+  
+  .tab-button span {
+    display: none;
+  }
+  
+  .tab-button::before {
+    content: attr(data-icon);
+    font-size: 18px;
+  }
+  
+  .tab-button[data-tab="polideportivos"]::before { content: "🏟️"; }
+  .tab-button[data-tab="pistas"]::before { content: "🎾"; }
+  .tab-button[data-tab="reservas"]::before { content: "📋"; }
+  .tab-button[data-tab="usuarios"]::before { content: "👥"; }
+  
+  .tab-content {
+    padding: 16px;
+  }
+  
+  .seccion-titulo {
+    font-size: 18px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .polideportivo-card,
+  .pista-card,
+  .reserva-card {
+    padding: 16px;
+  }
+  
+  .polideportivo-nombre {
+    font-size: 18px;
+  }
+  
+  .pista-nombre {
+    font-size: 18px;
+  }
+  
+  .boton-accion {
+    min-height: 65px;
+    padding: 10px;
+    font-size: 12px;
+  }
+  
+  .boton-accion::after {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  
+  .filtro-boton {
+    min-width: 130px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  /* Tabla de usuarios muy pequeño */
+  .usuarios-table {
+    min-width: 550px;
+  }
+  
+  .usuarios-table th,
+  .usuarios-table td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .rol-badge {
+    font-size: 9px;
+    padding: 3px 6px;
+    min-width: 50px;
+  }
+  
+  .boton-hacer-admin,
+  .boton-quitar-admin {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+}
+
+/* Dispositivos muy pequeños (menos de 360px) */
+@media (max-width: 360px) {
+  .admin-container {
+    padding: 12px 14px !important;
+  }
+  
+  .header {
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+  
+  .welcome-text {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+  }
+  
+  .back-button {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    max-width: 140px !important;
+  }
+  
+  .tab-button {
+    padding: 12px 10px !important;
+    min-height: 48px !important;
+    font-size: 12px !important;
+  }
+  
+  .seccion-titulo {
+    font-size: 16px !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    gap: 4px;
+  }
+  
+  .polideportivo-card,
+  .pista-card,
+  .reserva-card {
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+  
+  .polideportivo-nombre,
+  .pista-nombre,
+  .reserva-nombre-pista {
+    font-size: 16px !important;
+    flex-wrap: wrap;
+  }
+  
+  .polideportivo-direccion,
+  .pista-detalles {
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+  }
+  
+  .estado-container {
+    padding: 8px 12px !important;
+  }
+  
+  .estado-texto {
+    font-size: 11px !important;
+  }
+  
+  .acciones-container {
+    gap: 6px;
+  }
+  
+  .boton-accion {
+    min-height: 55px !important;
+    font-size: 10px !important;
+    padding: 8px !important;
+  }
+  
+  .boton-accion::after {
+    font-size: 16px !important;
+    margin-bottom: 2px;
+  }
+  
+  .boton-agregar,
+  .boton-eliminar,
+  .boton-cancelar {
+    padding: 10px 14px !important;
+    font-size: 12px !important;
+    min-height: 45px !important;
+  }
+  
+  .filtro-boton {
+    min-width: 110px !important;
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Mejora para formularios en móviles pequeños */
+  .modal-input,
+  .modal-select {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+  }
+  
+  .modal-button {
+    padding: 12px 16px !important;
+    min-height: 45px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Orientación landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .admin-container {
+    padding: 16px !important;
+  }
+  
+  .header {
+    padding: 20px !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .header-top {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .back-button {
+    order: 1;
+    margin: 0;
+  }
+  
+  .welcome-text {
+    order: 3;
+    width: 100%;
+    margin-top: 10px;
+    font-size: 20px;
+  }
+  
+  .username {
+    order: 2;
+    margin: 0;
+  }
+  
+  .tab-content {
+    padding: 20px !important;
+  }
+  
+  .list-content.polideportivos-grid,
+  .list-content:not(.polideportivos-grid) {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 15px;
+  }
+  
+  .polideportivo-card,
+  .pista-card {
+    min-height: 200px !important;
+  }
+  
+  .acciones-container {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Pantallas grandes (4K) */
+@media (min-width: 2000px) {
+  .admin-container {
+    max-width: 2000px;
+  }
+  
+  .list-content.polideportivos-grid {
+    grid-template-columns: repeat(auto-fit, minmax(600px, 650px));
+  }
+  
+  .list-content:not(.polideportivos-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(500px, 550px));
+  }
+  
+  .polideportivo-card,
+  .pista-card,
+  .reserva-card {
+    padding: 48px;
+  }
+  
+  .seccion-titulo {
+    font-size: 32px;
+  }
+  
+  .boton-agregar {
+    padding: 20px 40px;
+    font-size: 18px;
+  }
+}
+
+/* Evitar zoom en inputs en iOS */
+@media (max-width: 768px) {
+  .modal-input,
+  .modal-select,
+  .modal-input.precio-input {
+    font-size: 16px !important;
+  }
+}
+
+/* Mejoras para el contenido largo en móviles */
+@media (max-width: 768px) {
+  .polideportivo-nombre,
+  .pista-nombre,
+  .reserva-nombre-pista {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .polideportivo-direccion {
+    word-break: break-word;
+    line-height: 1.4;
+  }
+}
+
+/* Mejoras para scroll en móviles */
+@media (max-width: 768px) {
+  .modal-content {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .filtro-botones {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .filtro-botones::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Mejoras para elementos de formulario en móviles */
+@media (max-width: 768px) {
+  .form-label {
+    font-size: 14px;
+  }
+  
+  .modal-input:focus,
+  .modal-select:focus {
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  }
+}
+
+/* Ajustes para el modal de confirmación en móviles */
+@media (max-width: 480px) {
+  .modal-content.confirmacion {
+    padding: 20px !important;
+  }
+  
+  .confirmacion-icono {
+    font-size: 48px !important;
+  }
+  
+  .confirmacion-mensaje {
+    font-size: 16px !important;
+  }
+  
+  .confirmacion-detalle {
+    font-size: 14px !important;
+    padding: 12px !important;
+  }
+}
+
+/* Mejoras visuales específicas para móviles */
+@media (max-width: 768px) {
+  .polideportivo-card,
+  .pista-card,
+  .reserva-card,
+  .header,
+  .content {
+    box-shadow: var(--shadow-md);
+  }
+  
+  .polideportivo-card:hover,
+  .pista-card:hover,
+  .reserva-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Optimizar animaciones para usuarios que prefieren reducidas */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============ IMPRESIÓN ============ */
+@media print {
+  .admin-container {
+    padding: 0;
+    max-width: 100%;
+  }
+  
+  .header,
+  .content {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .back-button,
+  .boton-agregar,
+  .boton-eliminar,
+  .boton-cancelar,
+  .boton-accion,
+  .modal-button {
+    display: none;
+  }
+  
+  .tabs-container {
+    display: none;
+  }
+  
+  .polideportivo-card,
+  .pista-card,
+  .reserva-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  /* Mantener colores básicos para impresión */
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .usuarios-table th {
+    background: #f0f0f0 !important;
+    color: black !important;
+  }
+  
+  .usuarios-table td {
+    border-color: #ddd;
+  }
+}
+
+/* ============ SCROLLBAR PERSONALIZADO ============ */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 6px;
+  border: 2px solid var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* ============ ANIMACIONES DE ENTRADA PARA TARJETAS ============ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.polideportivo-card,
+.pista-card,
+.reserva-card {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* ============ EFECTO DE CIERRE DEL MODAL ============ */
+.modal-overlay.closing .modal-content {
+  animation: modalSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes modalSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+}
+
+/* ============ AJUSTES FINALES PARA LISTAS VACÍAS ============ */
+@media (max-width: 768px) {
+  .lista-vacia-container {
+    padding: 40px 20px;
+  }
+  
+  .lista-vacia {
+    font-size: 18px;
+  }
+  
+  .lista-vacia-subtexto {
+    font-size: 14px;
+  }
+  
+  .loading-container {
+    min-height: 300px;
+  }
+  
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .loading-text {
+    font-size: 16px;
+  }
+}

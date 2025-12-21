@@ -1,0 +1,444 @@
+.login-overlay {
+  min-height: 100vh;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s ease;
+}
+
+.login-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Estilos base del formulario */
+.form-container {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 20px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: rgba(79, 70, 229, 0.1);
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.dark-mode-toggle {
+  background: none;
+  border: none;
+  font-size: 1.375rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.dark-mode-toggle:hover {
+  background-color: rgba(79, 70, 229, 0.1);
+}
+
+/* Títulos */
+.title {
+  font-size: 1.625rem;
+  font-weight: 800;
+  margin-bottom: 5px;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.subtitle {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 25px;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+/* Inputs */
+.input {
+  width: 100%;
+  height: 50px;
+  border: 1px solid;
+  border-radius: 12px;
+  padding: 0 16px;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.password-container {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.password-input {
+  padding-right: 50px;
+}
+
+.eye-button {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.eye-button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.eye-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Recuperar contraseña */
+.recuperar-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+  margin-top: 5px;
+}
+
+.recuperar-button {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.recuperar-button:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.recuperar-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Botón principal */
+.button {
+  padding: 16px;
+  border-radius: 12px;
+  width: 100%;
+  border: none;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.button:hover:not(.button-disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(79, 70, 229, 0.3);
+}
+
+.button-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.button-text {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.button-icon {
+  font-size: 1.25rem;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid #FFFFFF;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mensaje de error */
+.error-container {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.error-icon {
+  font-size: 1.25rem;
+}
+
+.error-text {
+  font-size: 0.9375rem;
+  text-align: center;
+  flex: 1;
+  font-weight: 500;
+}
+
+/* Divisor */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+}
+
+.divider-text {
+  padding: 0 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Botón secundario */
+.secondary-button {
+  border: 2px solid;
+  padding: 14px;
+  border-radius: 12px;
+  width: 100%;
+  background: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background-color: rgba(79, 70, 229, 0.05);
+  transform: translateY(-1px);
+}
+
+.secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.secondary-button-text {
+  font-weight: 700;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+/* Estilos para pantallas pequeñas (< 375px) */
+.form-container-small {
+  padding: 15px;
+  border-radius: 16px;
+}
+
+.title-small {
+  font-size: 1.375rem;
+  margin-bottom: 3px;
+}
+
+.subtitle-small {
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+
+.input-small {
+  height: 45px;
+  font-size: 0.9375rem;
+  padding: 0 14px;
+  margin-bottom: 12px;
+}
+
+.recuperar-button-small {
+  font-size: 0.8125rem;
+}
+
+.button-small {
+  padding: 14px;
+}
+
+.button-text-small {
+  font-size: 1rem;
+}
+
+.divider-small {
+  margin: 16px 0;
+}
+
+.secondary-button-small {
+  padding: 12px;
+}
+
+.secondary-button-text-small {
+  font-size: 0.875rem;
+}
+
+/* Estilos para pantallas grandes (> 768px) */
+.form-container-large {
+  max-width: 450px;
+  padding: 30px 40px;
+  border-radius: 24px;
+}
+
+.title-large {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.subtitle-large {
+  font-size: 1.125rem;
+  margin-bottom: 30px;
+}
+
+.input-large {
+  height: 55px;
+  font-size: 1.0625rem;
+  padding: 0 18px;
+  margin-bottom: 18px;
+}
+
+.recuperar-button-large {
+  font-size: 0.9375rem;
+}
+
+.button-large {
+  padding: 18px;
+}
+
+.button-text-large {
+  font-size: 1.125rem;
+}
+
+.divider-large {
+  margin: 24px 0;
+}
+
+.secondary-button-large {
+  padding: 16px;
+}
+
+.secondary-button-text-large {
+  font-size: 1.0625rem;
+}
+
+/* Responsive adicional */
+@media (max-width: 480px) {
+  .login-overlay {
+    padding: 5px;
+  }
+  
+  .form-container {
+    padding: 15px;
+  }
+  
+  .header {
+    margin-bottom: 5px;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 320px) {
+  .form-container {
+    padding: 10px;
+  }
+  
+  .title {
+    font-size: 1.25rem;
+  }
+  
+  .input {
+    height: 40px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .secondary-button,
+  .input,
+  .loading-spinner {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Focus visible para mejor accesibilidad */
+.button:focus-visible,
+.secondary-button:focus-visible,
+.input:focus-visible,
+.recuperar-button:focus-visible,
+.eye-button:focus-visible,
+.back-button:focus-visible,
+.dark-mode-toggle:focus-visible {
+  outline: 2px solid #4F46E5;
+  outline-offset: 2px;
+}
