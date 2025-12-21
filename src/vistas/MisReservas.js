@@ -16,13 +16,13 @@ export default function Reservas() {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroFecha, setFiltroFecha] = useState('todas');
   const [filtroTipo, setFiltroTipo] = useState('todos');
-  const [cancelando, setCancelando] = useState({}); // Para controlar qué reserva se está cancelando
+  const [cancelando, setCancelando] = useState({});
 
-  // Obtener datos del usuario desde el contexto y localStorage
+  // Obtener datos del usuario
   const usuario = user?.usuario || '';
   const dni = user?.dni || '';
   const userId = user?.id || 0;
-  const token = localStorage.getItem('auth_token'); // Obtener token de localStorage
+  const token = localStorage.getItem('auth_token');
 
   // FUNCIÓN PARA VOLVER ATRÁS
   const handleGoBack = () => {
@@ -42,7 +42,7 @@ export default function Reservas() {
     return headers;
   };
 
-  // Cargar reservas
+  // Cargar reservas - VERSIÓN CORREGIDA
   useEffect(() => {
     const fetchReservas = async () => {
       if (!token) {
@@ -58,19 +58,8 @@ export default function Reservas() {
         console.log('🔍 Buscando mis reservas para usuario ID:', userId);
         console.log('🔑 Token disponible:', token ? 'Sí' : 'No');
         
-        // ✅ VERSIÓN CORREGIDA: Usar userId en la ruta si es necesario
-        // Intentar diferentes endpoints según la API del backend
-        let endpoint = '';
-        
-        // Opción 1: Endpoint con ID de usuario (más común)
-        if (userId > 0) {
-          endpoint = `https://tfgv2-production.up.railway.app/api/reservas/usuario/${userId}`;
-        } 
-        // Opción 2: Endpoint sin ID (el backend obtiene el ID del token)
-        else {
-          endpoint = `https://tfgv2-production.up.railway.app/api/reservas/mis-reservas`;
-        }
-        
+        // ✅ USAR SOLO EL ENDPOINT QUE FUNCIONA
+        const endpoint = `https://tfgv2-production.up.railway.app/api/reservas/mis-reservas`;
         console.log('📡 Usando endpoint:', endpoint);
         
         const response = await fetch(endpoint, {
@@ -83,42 +72,6 @@ export default function Reservas() {
         console.log('📊 Respuesta del servidor:', data);
         
         if (!response.ok) {
-          // Si la primera opción falla, intentar la otra
-          if (response.status === 400 || response.status === 404) {
-            console.log('🔄 Intentando endpoint alternativo...');
-            
-            const altEndpoint = userId > 0 
-              ? `https://tfgv2-production.up.railway.app/api/reservas/mis-reservas`
-              : `https://tfgv2-production.up.railway.app/api/reservas/usuario/${userId}`;
-            
-            const altResponse = await fetch(altEndpoint, {
-              method: 'GET',
-              headers: getHeaders()
-            });
-            
-            const altData = await altResponse.json();
-            
-            if (!altResponse.ok) {
-              // Si el token no es válido, redirigir al login
-              if (altResponse.status === 401) {
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('user');
-                setError('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-                setTimeout(() => navigate('/login'), 2000);
-                return;
-              }
-              throw new Error(altData.error || `Error ${altResponse.status}`);
-            }
-            
-            if (!altData.success) {
-              throw new Error(altData.error || 'Error al obtener reservas');
-            }
-            
-            processReservas(altData.data || []);
-            return;
-          }
-          
-          // Si el token no es válido, redirigir al login
           if (response.status === 401) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
@@ -126,8 +79,7 @@ export default function Reservas() {
             setTimeout(() => navigate('/login'), 2000);
             return;
           }
-          
-          throw new Error(data.error || `Error ${response.status}: ${response.statusText}`);
+          throw new Error(data.error || `Error ${response.status}`);
         }
         
         if (!data.success) {
@@ -232,7 +184,7 @@ export default function Reservas() {
     navigate(`/resumen-reserva?reserva=${encodeURIComponent(JSON.stringify(reserva))}`);
   };
 
-  // 👇 FUNCIÓN MEJORADA PARA CANCELAR RESERVAS
+  // 👇 FUNCIÓN MEJORADA PARA CANCELAR RESERVAS - CORREGIDA
   const handleCancelar = async (reservaId, e) => {
     e.stopPropagation();
     
@@ -240,38 +192,20 @@ export default function Reservas() {
       return;
     }
 
-    // Marcar esta reserva como cancelando
     setCancelando(prev => ({ ...prev, [reservaId]: true }));
 
     try {
       console.log(`❌ Intentando cancelar reserva ID: ${reservaId}`);
       
-      // Intentar con la ruta específica primero
-      let response = await fetch(`https://tfgv2-production.up.railway.app/api/reservas/${reservaId}/cancelar`, {
+      // ✅ USAR LA RUTA CORRECTA DEL BACKEND
+      const response = await fetch(`https://tfgv2-production.up.railway.app/api/reservas/${reservaId}/cancelar`, {
         method: 'PUT',
         headers: getHeaders()
       });
 
-      let data = await response.json();
+      const data = await response.json();
       
-      console.log('📊 Respuesta de cancelación (ruta específica):', data);
-
-      // Si la ruta específica falla, intentar con la ruta general
-      if (!response.ok || !data.success) {
-        console.log('⚠️ Ruta específica falló, intentando con ruta general...');
-        
-        response = await fetch(`https://tfgv2-production.up.railway.app/api/reservas/${reservaId}`, {
-          method: 'PUT',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            estado: 'cancelada'
-          })
-        });
-
-        data = await response.json();
-        
-        console.log('📊 Respuesta de cancelación (ruta general):', data);
-      }
+      console.log('📊 Respuesta de cancelación:', data);
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Error al cancelar la reserva');
@@ -296,7 +230,6 @@ export default function Reservas() {
       console.error('Error al cancelar reserva:', error);
       alert(`❌ Error al cancelar: ${error.message}. Por favor, contacta con soporte.`);
     } finally {
-      // Quitar el estado de cancelando
       setCancelando(prev => ({ ...prev, [reservaId]: false }));
     }
   };
