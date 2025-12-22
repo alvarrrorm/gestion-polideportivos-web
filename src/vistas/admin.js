@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexto/AuthProvider';
 import './AdminPanel.css';
 
-// URLs de la API
+// URLs de la API - CORREGIDAS
 const API_BASE = 'https://tfgv2-production.up.railway.app/api';
 const PISTAS_URL = `${API_BASE}/pistas`;
 const RESERVAS_URL = `${API_BASE}/reservas`;
@@ -54,19 +54,6 @@ export default function AdminPanel({ navigation }) {
   const [passwordConfirmacion, setPasswordConfirmacion] = useState('');
   const [cambiandoRol, setCambiandoRol] = useState(false);
 
-  // Estadísticas
-  const [estadisticas, setEstadisticas] = useState({
-    totalPistas: 0,
-    pistasDisponibles: 0,
-    pistasMantenimiento: 0,
-    totalReservas: 0,
-    reservasConfirmadas: 0,
-    reservasPendientes: 0,
-    totalUsuarios: 0,
-    usuariosRegistradosHoy: 0,
-    totalPolideportivos: 0
-  });
-
   // Obtener el nombre del usuario desde el contexto de autenticación
   const usuarioNombre = user?.nombre || user?.usuario || 'Administrador';
   const userRole = user?.rol || 'usuario';
@@ -113,43 +100,6 @@ export default function AdminPanel({ navigation }) {
     }
     return false;
   }, [logout]);
-
-  // Cargar todas las estadísticas
-  const cargarEstadisticas = async () => {
-    try {
-      // Usar los datos ya cargados en el estado
-      const totalPistas = pistas.length;
-      const pistasDisponibles = pistas.filter(p => p.disponible).length;
-      const pistasMantenimiento = pistas.filter(p => !p.disponible).length;
-
-      const totalReservas = reservas.length;
-      const reservasConfirmadas = reservas.filter(r => r.estado === 'confirmada').length;
-      const reservasPendientes = reservas.filter(r => r.estado === 'pendiente').length;
-
-      const totalUsuarios = usuarios.length;
-      const hoy = new Date().toISOString().split('T')[0];
-      const usuariosRegistradosHoy = usuarios.filter(u => 
-        u.fecha_creacion?.split('T')[0] === hoy
-      ).length;
-
-      const totalPolideportivos = polideportivos.length;
-
-      setEstadisticas({
-        totalPistas,
-        pistasDisponibles,
-        pistasMantenimiento,
-        totalReservas,
-        reservasConfirmadas,
-        reservasPendientes,
-        totalUsuarios,
-        usuariosRegistradosHoy,
-        totalPolideportivos
-      });
-
-    } catch (error) {
-      console.error('Error cargando estadísticas:', error);
-    }
-  };
 
   // Cargar pistas, reservas, polideportivos y usuarios desde la API
   const fetchData = useCallback(async () => {
@@ -228,7 +178,7 @@ export default function AdminPanel({ navigation }) {
       
       // Cargar usuarios (solo super_admin puede ver todos)
       try {
-        const usuariosResponse = await fetch(`${USUARIOS_URL}/con-poli`, {
+        const usuariosResponse = await fetch(USUARIOS_URL, {
           headers: headers
         });
         
@@ -241,9 +191,6 @@ export default function AdminPanel({ navigation }) {
       } catch (usuariosError) {
         console.error('Error al cargar usuarios:', usuariosError);
       }
-      
-      // Cargar estadísticas DESPUÉS de tener todos los datos
-      // Nota: cargarEstadisticas se llama más abajo en el useEffect
       
     } catch (error) {
       console.error('Error al cargar datos:', error);
@@ -258,17 +205,9 @@ export default function AdminPanel({ navigation }) {
     }
   }, [token, handleAuthError]);
 
-  // Efecto para cargar datos iniciales
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // Efecto para actualizar estadísticas cuando cambian los datos
-  useEffect(() => {
-    if (pistas.length > 0 || reservas.length > 0 || usuarios.length > 0 || polideportivos.length > 0) {
-      cargarEstadisticas();
-    }
-  }, [pistas, reservas, usuarios, polideportivos]);
 
   // Filtrar pistas por polideportivo
   const pistasFiltradas = filtroPolideportivo === 'todos' 
@@ -312,7 +251,7 @@ export default function AdminPanel({ navigation }) {
 
   // ========== FUNCIONES PARA GESTIÓN DE PISTAS ==========
 
-  // ✅ Función para cambiar estado de mantenimiento
+  // ✅ CORREGIDA: Función para cambiar estado de mantenimiento
   const toggleMantenimiento = async (pista) => {
     if (!pista || !token) return;
     
@@ -354,9 +293,6 @@ export default function AdminPanel({ navigation }) {
           } : p
         ));
         
-        // Actualizar estadísticas después del cambio
-        cargarEstadisticas();
-        
         alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
       }
       
@@ -366,7 +302,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ✅ Función para eliminar pista con manejo de error 409
+  // ✅ CORREGIDA: Función para eliminar pista con manejo de error 409
   const eliminarPista = async (pista) => {
     const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la pista "${pista.nombre}"?\n\nEsta acción no se puede deshacer.`);
     if (!confirmar) return;
@@ -400,8 +336,6 @@ export default function AdminPanel({ navigation }) {
       if (data.success) {
         // Eliminar de la lista
         setPistas((prevPistas) => prevPistas.filter((p) => p.id !== pista.id));
-        // Actualizar estadísticas
-        cargarEstadisticas();
         alert('✅ Pista eliminada correctamente');
       }
       
@@ -475,8 +409,6 @@ export default function AdminPanel({ navigation }) {
         setNuevaDescripcion('');
         setNuevoPolideportivo('');
         setModalPistaVisible(false);
-        // Actualizar estadísticas
-        cargarEstadisticas();
         alert('✅ Pista agregada correctamente');
       }
       
@@ -549,8 +481,6 @@ export default function AdminPanel({ navigation }) {
           } : p
         ));
         
-        // Actualizar estadísticas
-        cargarEstadisticas();
         alert('✅ Pista actualizada exitosamente');
         setModalPistaEdicionVisible(false);
         setPistaEditando(null);
@@ -655,8 +585,6 @@ export default function AdminPanel({ navigation }) {
       setNuevoPolideportivoDireccion('');
       setNuevoPolideportivoTelefono('');
       setModalPolideportivoVisible(false);
-      // Actualizar estadísticas
-      cargarEstadisticas();
       alert('✅ Polideportivo agregado correctamente');
     } catch (error) {
       console.error('Error al agregar polideportivo:', error);
@@ -693,8 +621,6 @@ export default function AdminPanel({ navigation }) {
       }
 
       setPolideportivos((prevPolideportivos) => prevPolideportivos.filter((polideportivo) => polideportivo.id !== id));
-      // Actualizar estadísticas
-      cargarEstadisticas();
       alert('✅ Polideportivo eliminado correctamente');
     } catch (error) {
       console.error('Error al eliminar polideportivo:', error);
@@ -719,8 +645,6 @@ export default function AdminPanel({ navigation }) {
       }
 
       setReservas((prevReservas) => prevReservas.filter((reserva) => reserva.id !== id));
-      // Actualizar estadísticas
-      cargarEstadisticas();
       alert('✅ Reserva cancelada correctamente');
     } catch (error) {
       console.error('Error al cancelar reserva:', error);
@@ -857,58 +781,6 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== COMPONENTES DE ESTADÍSTICAS ==========
-
-  const renderEstadisticas = () => (
-    <div className="estadisticas-container">
-      <h2 className="estadisticas-titulo">📊 Estadísticas Generales</h2>
-      <div className="estadisticas-grid">
-        <div className="estadistica-card">
-          <div className="estadistica-icono">🏟️</div>
-          <div className="estadistica-info">
-            <div className="estadistica-valor">{estadisticas.totalPolideportivos}</div>
-            <div className="estadistica-label">Polideportivos</div>
-          </div>
-        </div>
-
-        <div className="estadistica-card">
-          <div className="estadistica-icono">🎾</div>
-          <div className="estadistica-info">
-            <div className="estadistica-valor">{estadisticas.totalPistas}</div>
-            <div className="estadistica-label">Pistas Totales</div>
-            <div className="estadistica-subinfo">
-              <span className="estadistica-subitem disponible">{estadisticas.pistasDisponibles} disponibles</span>
-              <span className="estadistica-subitem mantenimiento">{estadisticas.pistasMantenimiento} en mantenimiento</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="estadistica-card">
-          <div className="estadistica-icono">📋</div>
-          <div className="estadistica-info">
-            <div className="estadistica-valor">{estadisticas.totalReservas}</div>
-            <div className="estadistica-label">Reservas Totales</div>
-            <div className="estadistica-subinfo">
-              <span className="estadistica-subitem confirmada">{estadisticas.reservasConfirmadas} confirmadas</span>
-              <span className="estadistica-subitem pendiente">{estadisticas.reservasPendientes} pendientes</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="estadistica-card">
-          <div className="estadistica-icono">👥</div>
-          <div className="estadistica-info">
-            <div className="estadistica-valor">{estadisticas.totalUsuarios}</div>
-            <div className="estadistica-label">Usuarios Registrados</div>
-            <div className="estadistica-subinfo">
-              <span className="estadistica-subitem nuevo">{estadisticas.usuariosRegistradosHoy} nuevos hoy</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   // ========== RENDERIZADO DE COMPONENTES ==========
 
   // Renderizado de items de polideportivos
@@ -938,7 +810,7 @@ export default function AdminPanel({ navigation }) {
     </div>
   );
 
-  // Renderizado de pistas
+  // ✅ CORREGIDO: Renderizado de pistas
   const renderPistaItem = (item) => {
     return (
       <div className="pista-card">
@@ -1065,13 +937,6 @@ export default function AdminPanel({ navigation }) {
   // FUNCIÓN PARA RENDERIZAR EL CONTENIDO
   const renderContent = () => {
     switch (activeTab) {
-      case 'estadisticas':
-        return (
-          <div className="tab-content">
-            {renderEstadisticas()}
-          </div>
-        );
-
       case 'polideportivos':
         return (
           <div className="tab-content">
@@ -1763,13 +1628,6 @@ export default function AdminPanel({ navigation }) {
           {/* Tabs de navegación */}
           <div className="tabs-container">
             <button
-              className={`tab-button ${activeTab === 'estadisticas' ? 'active-tab' : ''}`}
-              onClick={() => setActiveTab('estadisticas')}
-            >
-              📊 Estadísticas
-            </button>
-            
-            <button
               className={`tab-button ${activeTab === 'polideportivos' ? 'active-tab' : ''}`}
               onClick={() => setActiveTab('polideportivos')}
             >
@@ -1803,26 +1661,6 @@ export default function AdminPanel({ navigation }) {
       {/* Contenido principal */}
       <div className="content">
         {renderContent()}
-      </div>
-
-      {/* Footer con botones de acción */}
-      <div className="footer">
-        <button
-          className="btn-refresh"
-          onClick={() => {
-            fetchData();
-            cargarEstadisticas();
-          }}
-          disabled={refreshing}
-        >
-          {refreshing ? '🔄 Actualizando...' : '🔄 Actualizar Datos'}
-        </button>
-        <button
-          className="btn-logout"
-          onClick={logout}
-        >
-          🚪 Cerrar Sesión
-        </button>
       </div>
     </div>
   );
