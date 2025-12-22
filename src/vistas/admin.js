@@ -8,7 +8,6 @@ const PISTAS_URL = `${API_BASE}/pistas`;
 const RESERVAS_URL = `${API_BASE}/reservas`;
 const POLIDEPORTIVOS_URL = `${API_BASE}/polideportivos`;
 const USUARIOS_URL = `${API_BASE}/usuarios`;
-const LOGIN_URL = `${API_BASE}/auth/login`;
 
 export default function AdminPanel({ navigation }) {
   const { user, logout } = useAuth();
@@ -116,43 +115,24 @@ export default function AdminPanel({ navigation }) {
   }, [logout]);
 
   // Cargar todas las estadísticas
-  const cargarEstadisticas = async (supabase) => {
+  const cargarEstadisticas = async () => {
     try {
-      // Estadísticas de pistas
-      const { data: todasPistas } = await supabase
-        .from('pistas')
-        .select('id, disponible');
-      
-      const totalPistas = todasPistas?.length || 0;
-      const pistasDisponibles = todasPistas?.filter(p => p.disponible).length || 0;
-      const pistasMantenimiento = todasPistas?.filter(p => !p.disponible).length || 0;
+      // Usar los datos ya cargados en el estado
+      const totalPistas = pistas.length;
+      const pistasDisponibles = pistas.filter(p => p.disponible).length;
+      const pistasMantenimiento = pistas.filter(p => !p.disponible).length;
 
-      // Estadísticas de reservas
+      const totalReservas = reservas.length;
+      const reservasConfirmadas = reservas.filter(r => r.estado === 'confirmada').length;
+      const reservasPendientes = reservas.filter(r => r.estado === 'pendiente').length;
+
+      const totalUsuarios = usuarios.length;
       const hoy = new Date().toISOString().split('T')[0];
-      const { data: todasReservas } = await supabase
-        .from('reservas')
-        .select('id, estado, fecha');
-      
-      const totalReservas = todasReservas?.length || 0;
-      const reservasConfirmadas = todasReservas?.filter(r => r.estado === 'confirmada').length || 0;
-      const reservasPendientes = todasReservas?.filter(r => r.estado === 'pendiente').length || 0;
-
-      // Estadísticas de usuarios
-      const { data: todosUsuarios } = await supabase
-        .from('usuarios')
-        .select('id, fecha_creacion');
-      
-      const totalUsuarios = todosUsuarios?.length || 0;
-      const usuariosRegistradosHoy = todosUsuarios?.filter(u => 
+      const usuariosRegistradosHoy = usuarios.filter(u => 
         u.fecha_creacion?.split('T')[0] === hoy
-      ).length || 0;
+      ).length;
 
-      // Estadísticas de polideportivos
-      const { data: todosPolideportivos } = await supabase
-        .from('polideportivos')
-        .select('id');
-      
-      const totalPolideportivos = todosPolideportivos?.length || 0;
+      const totalPolideportivos = polideportivos.length;
 
       setEstadisticas({
         totalPistas,
@@ -262,9 +242,8 @@ export default function AdminPanel({ navigation }) {
         console.error('Error al cargar usuarios:', usuariosError);
       }
       
-      // Cargar estadísticas
-      const supabase = req.app?.get('supabase') || { from: () => ({ select: () => Promise.resolve({ data: [], error: null }) }) };
-      await cargarEstadisticas(supabase);
+      // Cargar estadísticas DESPUÉS de tener todos los datos
+      // Nota: cargarEstadisticas se llama más abajo en el useEffect
       
     } catch (error) {
       console.error('Error al cargar datos:', error);
@@ -279,9 +258,17 @@ export default function AdminPanel({ navigation }) {
     }
   }, [token, handleAuthError]);
 
+  // Efecto para cargar datos iniciales
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Efecto para actualizar estadísticas cuando cambian los datos
+  useEffect(() => {
+    if (pistas.length > 0 || reservas.length > 0 || usuarios.length > 0 || polideportivos.length > 0) {
+      cargarEstadisticas();
+    }
+  }, [pistas, reservas, usuarios, polideportivos]);
 
   // Filtrar pistas por polideportivo
   const pistasFiltradas = filtroPolideportivo === 'todos' 
@@ -367,6 +354,9 @@ export default function AdminPanel({ navigation }) {
           } : p
         ));
         
+        // Actualizar estadísticas después del cambio
+        cargarEstadisticas();
+        
         alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
       }
       
@@ -410,6 +400,8 @@ export default function AdminPanel({ navigation }) {
       if (data.success) {
         // Eliminar de la lista
         setPistas((prevPistas) => prevPistas.filter((p) => p.id !== pista.id));
+        // Actualizar estadísticas
+        cargarEstadisticas();
         alert('✅ Pista eliminada correctamente');
       }
       
@@ -483,6 +475,8 @@ export default function AdminPanel({ navigation }) {
         setNuevaDescripcion('');
         setNuevoPolideportivo('');
         setModalPistaVisible(false);
+        // Actualizar estadísticas
+        cargarEstadisticas();
         alert('✅ Pista agregada correctamente');
       }
       
@@ -555,6 +549,8 @@ export default function AdminPanel({ navigation }) {
           } : p
         ));
         
+        // Actualizar estadísticas
+        cargarEstadisticas();
         alert('✅ Pista actualizada exitosamente');
         setModalPistaEdicionVisible(false);
         setPistaEditando(null);
@@ -659,6 +655,8 @@ export default function AdminPanel({ navigation }) {
       setNuevoPolideportivoDireccion('');
       setNuevoPolideportivoTelefono('');
       setModalPolideportivoVisible(false);
+      // Actualizar estadísticas
+      cargarEstadisticas();
       alert('✅ Polideportivo agregado correctamente');
     } catch (error) {
       console.error('Error al agregar polideportivo:', error);
@@ -695,6 +693,8 @@ export default function AdminPanel({ navigation }) {
       }
 
       setPolideportivos((prevPolideportivos) => prevPolideportivos.filter((polideportivo) => polideportivo.id !== id));
+      // Actualizar estadísticas
+      cargarEstadisticas();
       alert('✅ Polideportivo eliminado correctamente');
     } catch (error) {
       console.error('Error al eliminar polideportivo:', error);
@@ -719,6 +719,8 @@ export default function AdminPanel({ navigation }) {
       }
 
       setReservas((prevReservas) => prevReservas.filter((reserva) => reserva.id !== id));
+      // Actualizar estadísticas
+      cargarEstadisticas();
       alert('✅ Reserva cancelada correctamente');
     } catch (error) {
       console.error('Error al cancelar reserva:', error);
@@ -1807,7 +1809,10 @@ export default function AdminPanel({ navigation }) {
       <div className="footer">
         <button
           className="btn-refresh"
-          onClick={fetchData}
+          onClick={() => {
+            fetchData();
+            cargarEstadisticas();
+          }}
           disabled={refreshing}
         >
           {refreshing ? '🔄 Actualizando...' : '🔄 Actualizar Datos'}
