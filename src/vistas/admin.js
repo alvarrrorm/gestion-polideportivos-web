@@ -283,7 +283,7 @@ export default function AdminPanel({ navigation }) {
         method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({
-          enMantenimiento: enMantenimiento
+            enMantenimiento: enMantenimiento 
         }),
       });
       
