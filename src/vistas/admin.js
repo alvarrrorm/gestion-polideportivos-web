@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexto/AuthProvider';
 import './AdminPanel.css';
 
-// URLs de la API - CORREGIDAS
+// URLs de la API
 const API_BASE = 'https://tfgv2-production.up.railway.app/api';
 const PISTAS_URL = `${API_BASE}/pistas`;
 const RESERVAS_URL = `${API_BASE}/reservas`;
 const POLIDEPORTIVOS_URL = `${API_BASE}/polideportivos`;
 const USUARIOS_URL = `${API_BASE}/usuarios`;
+const LOGIN_URL = `${API_BASE}/auth/login`;
 
 export default function AdminPanel({ navigation }) {
   const { user, logout } = useAuth();
@@ -53,6 +54,19 @@ export default function AdminPanel({ navigation }) {
   const [polideportivoSeleccionado, setPolideportivoSeleccionado] = useState('');
   const [passwordConfirmacion, setPasswordConfirmacion] = useState('');
   const [cambiandoRol, setCambiandoRol] = useState(false);
+
+  // Estadísticas
+  const [estadisticas, setEstadisticas] = useState({
+    totalPistas: 0,
+    pistasDisponibles: 0,
+    pistasMantenimiento: 0,
+    totalReservas: 0,
+    reservasConfirmadas: 0,
+    reservasPendientes: 0,
+    totalUsuarios: 0,
+    usuariosRegistradosHoy: 0,
+    totalPolideportivos: 0
+  });
 
   // Obtener el nombre del usuario desde el contexto de autenticación
   const usuarioNombre = user?.nombre || user?.usuario || 'Administrador';
@@ -100,6 +114,62 @@ export default function AdminPanel({ navigation }) {
     }
     return false;
   }, [logout]);
+
+  // Cargar todas las estadísticas
+  const cargarEstadisticas = async (supabase) => {
+    try {
+      // Estadísticas de pistas
+      const { data: todasPistas } = await supabase
+        .from('pistas')
+        .select('id, disponible');
+      
+      const totalPistas = todasPistas?.length || 0;
+      const pistasDisponibles = todasPistas?.filter(p => p.disponible).length || 0;
+      const pistasMantenimiento = todasPistas?.filter(p => !p.disponible).length || 0;
+
+      // Estadísticas de reservas
+      const hoy = new Date().toISOString().split('T')[0];
+      const { data: todasReservas } = await supabase
+        .from('reservas')
+        .select('id, estado, fecha');
+      
+      const totalReservas = todasReservas?.length || 0;
+      const reservasConfirmadas = todasReservas?.filter(r => r.estado === 'confirmada').length || 0;
+      const reservasPendientes = todasReservas?.filter(r => r.estado === 'pendiente').length || 0;
+
+      // Estadísticas de usuarios
+      const { data: todosUsuarios } = await supabase
+        .from('usuarios')
+        .select('id, fecha_creacion');
+      
+      const totalUsuarios = todosUsuarios?.length || 0;
+      const usuariosRegistradosHoy = todosUsuarios?.filter(u => 
+        u.fecha_creacion?.split('T')[0] === hoy
+      ).length || 0;
+
+      // Estadísticas de polideportivos
+      const { data: todosPolideportivos } = await supabase
+        .from('polideportivos')
+        .select('id');
+      
+      const totalPolideportivos = todosPolideportivos?.length || 0;
+
+      setEstadisticas({
+        totalPistas,
+        pistasDisponibles,
+        pistasMantenimiento,
+        totalReservas,
+        reservasConfirmadas,
+        reservasPendientes,
+        totalUsuarios,
+        usuariosRegistradosHoy,
+        totalPolideportivos
+      });
+
+    } catch (error) {
+      console.error('Error cargando estadísticas:', error);
+    }
+  };
 
   // Cargar pistas, reservas, polideportivos y usuarios desde la API
   const fetchData = useCallback(async () => {
@@ -178,7 +248,7 @@ export default function AdminPanel({ navigation }) {
       
       // Cargar usuarios (solo super_admin puede ver todos)
       try {
-        const usuariosResponse = await fetch(USUARIOS_URL, {
+        const usuariosResponse = await fetch(`${USUARIOS_URL}/con-poli`, {
           headers: headers
         });
         
@@ -191,6 +261,10 @@ export default function AdminPanel({ navigation }) {
       } catch (usuariosError) {
         console.error('Error al cargar usuarios:', usuariosError);
       }
+      
+      // Cargar estadísticas
+      const supabase = req.app?.get('supabase') || { from: () => ({ select: () => Promise.resolve({ data: [], error: null }) }) };
+      await cargarEstadisticas(supabase);
       
     } catch (error) {
       console.error('Error al cargar datos:', error);
@@ -251,7 +325,7 @@ export default function AdminPanel({ navigation }) {
 
   // ========== FUNCIONES PARA GESTIÓN DE PISTAS ==========
 
-  // ✅ CORREGIDA: Función para cambiar estado de mantenimiento
+  // ✅ Función para cambiar estado de mantenimiento
   const toggleMantenimiento = async (pista) => {
     if (!pista || !token) return;
     
@@ -302,7 +376,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ✅ CORREGIDA: Función para eliminar pista con manejo de error 409
+  // ✅ Función para eliminar pista con manejo de error 409
   const eliminarPista = async (pista) => {
     const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la pista "${pista.nombre}"?\n\nEsta acción no se puede deshacer.`);
     if (!confirmar) return;
@@ -781,6 +855,58 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
+  // ========== COMPONENTES DE ESTADÍSTICAS ==========
+
+  const renderEstadisticas = () => (
+    <div className="estadisticas-container">
+      <h2 className="estadisticas-titulo">📊 Estadísticas Generales</h2>
+      <div className="estadisticas-grid">
+        <div className="estadistica-card">
+          <div className="estadistica-icono">🏟️</div>
+          <div className="estadistica-info">
+            <div className="estadistica-valor">{estadisticas.totalPolideportivos}</div>
+            <div className="estadistica-label">Polideportivos</div>
+          </div>
+        </div>
+
+        <div className="estadistica-card">
+          <div className="estadistica-icono">🎾</div>
+          <div className="estadistica-info">
+            <div className="estadistica-valor">{estadisticas.totalPistas}</div>
+            <div className="estadistica-label">Pistas Totales</div>
+            <div className="estadistica-subinfo">
+              <span className="estadistica-subitem disponible">{estadisticas.pistasDisponibles} disponibles</span>
+              <span className="estadistica-subitem mantenimiento">{estadisticas.pistasMantenimiento} en mantenimiento</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="estadistica-card">
+          <div className="estadistica-icono">📋</div>
+          <div className="estadistica-info">
+            <div className="estadistica-valor">{estadisticas.totalReservas}</div>
+            <div className="estadistica-label">Reservas Totales</div>
+            <div className="estadistica-subinfo">
+              <span className="estadistica-subitem confirmada">{estadisticas.reservasConfirmadas} confirmadas</span>
+              <span className="estadistica-subitem pendiente">{estadisticas.reservasPendientes} pendientes</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="estadistica-card">
+          <div className="estadistica-icono">👥</div>
+          <div className="estadistica-info">
+            <div className="estadistica-valor">{estadisticas.totalUsuarios}</div>
+            <div className="estadistica-label">Usuarios Registrados</div>
+            <div className="estadistica-subinfo">
+              <span className="estadistica-subitem nuevo">{estadisticas.usuariosRegistradosHoy} nuevos hoy</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // ========== RENDERIZADO DE COMPONENTES ==========
 
   // Renderizado de items de polideportivos
@@ -810,7 +936,7 @@ export default function AdminPanel({ navigation }) {
     </div>
   );
 
-  // ✅ CORREGIDO: Renderizado de pistas
+  // Renderizado de pistas
   const renderPistaItem = (item) => {
     return (
       <div className="pista-card">
@@ -937,6 +1063,13 @@ export default function AdminPanel({ navigation }) {
   // FUNCIÓN PARA RENDERIZAR EL CONTENIDO
   const renderContent = () => {
     switch (activeTab) {
+      case 'estadisticas':
+        return (
+          <div className="tab-content">
+            {renderEstadisticas()}
+          </div>
+        );
+
       case 'polideportivos':
         return (
           <div className="tab-content">
@@ -1628,6 +1761,13 @@ export default function AdminPanel({ navigation }) {
           {/* Tabs de navegación */}
           <div className="tabs-container">
             <button
+              className={`tab-button ${activeTab === 'estadisticas' ? 'active-tab' : ''}`}
+              onClick={() => setActiveTab('estadisticas')}
+            >
+              📊 Estadísticas
+            </button>
+            
+            <button
               className={`tab-button ${activeTab === 'polideportivos' ? 'active-tab' : ''}`}
               onClick={() => setActiveTab('polideportivos')}
             >
@@ -1661,6 +1801,23 @@ export default function AdminPanel({ navigation }) {
       {/* Contenido principal */}
       <div className="content">
         {renderContent()}
+      </div>
+
+      {/* Footer con botones de acción */}
+      <div className="footer">
+        <button
+          className="btn-refresh"
+          onClick={fetchData}
+          disabled={refreshing}
+        >
+          {refreshing ? '🔄 Actualizando...' : '🔄 Actualizar Datos'}
+        </button>
+        <button
+          className="btn-logout"
+          onClick={logout}
+        >
+          🚪 Cerrar Sesión
+        </button>
       </div>
     </div>
   );
