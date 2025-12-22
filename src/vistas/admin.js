@@ -280,7 +280,7 @@ export default function AdminPanel({ navigation }) {
     try {
       // ✅ CAMBIADO: Usar PUT en lugar de PATCH
       const response = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({
           enMantenimiento: enMantenimiento
