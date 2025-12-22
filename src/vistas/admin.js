@@ -280,7 +280,7 @@ export default function AdminPanel({ navigation }) {
     try {
       // ✅ CAMBIADO: Usar PUT en lugar de PATCH
       const response = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify({
             enMantenimiento: enMantenimiento 
@@ -291,7 +291,7 @@ export default function AdminPanel({ navigation }) {
       if (!response.ok) {
         console.warn('PUT falló, intentando con PATCH...');
         const responsePatch = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
-          method: 'PUT',
+          method: 'PATCH',
           headers: getHeaders(),
           body: JSON.stringify({
             enMantenimiento: enMantenimiento
