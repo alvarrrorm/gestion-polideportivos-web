@@ -176,9 +176,9 @@ export default function AdminPanel({ navigation }) {
       
       setReservas(reservasData.data);
       
-      // Cargar usuarios (solo super_admin puede ver todos)
+      // Cargar usuarios (solo super_admin puede ver todos) - USAR ENDPOINT ESPECIAL
       try {
-        const usuariosResponse = await fetch(USUARIOS_URL, {
+        const usuariosResponse = await fetch(`${USUARIOS_URL}/con-poli`, {
           headers: headers
         });
         
@@ -186,6 +186,18 @@ export default function AdminPanel({ navigation }) {
           const usuariosData = await usuariosResponse.json();
           if (usuariosData.success && Array.isArray(usuariosData.data)) {
             setUsuarios(usuariosData.data);
+          }
+        } else {
+          // Intentar con el endpoint normal
+          const usuariosResponseNormal = await fetch(USUARIOS_URL, {
+            headers: headers
+          });
+          
+          if (usuariosResponseNormal.ok) {
+            const usuariosDataNormal = await usuariosResponseNormal.json();
+            if (usuariosDataNormal.success && Array.isArray(usuariosDataNormal.data)) {
+              setUsuarios(usuariosDataNormal.data);
+            }
           }
         }
       } catch (usuariosError) {
@@ -255,9 +267,7 @@ export default function AdminPanel({ navigation }) {
   const toggleMantenimiento = async (pista) => {
     if (!pista || !token) return;
     
-    // Lógica: Si disponible=true → poner en mantenimiento (enMantenimiento=true)
-    //         Si disponible=false → quitar mantenimiento (enMantenimiento=false)
-    const enMantenimiento = pista.disponible;
+    const enMantenimiento = !pista.disponible;
     
     const confirmar = window.confirm(
       enMantenimiento
@@ -268,32 +278,58 @@ export default function AdminPanel({ navigation }) {
     if (!confirmar) return;
     
     try {
+      // ✅ CAMBIADO: Usar PUT en lugar de PATCH
       const response = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify({
           enMantenimiento: enMantenimiento
         }),
       });
       
+      // Si PUT falla, intentar con PATCH para retrocompatibilidad
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al cambiar estado de mantenimiento');
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        const actualizado = data.data;
-        // Actualizar estado localmente
-        setPistas(prev => prev.map(p => 
-          p.id === pista.id ? { 
-            ...p, 
-            disponible: actualizado.disponible === true || actualizado.disponible === 1
-          } : p
-        ));
+        console.warn('PUT falló, intentando con PATCH...');
+        const responsePatch = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            enMantenimiento: enMantenimiento
+          }),
+        });
         
-        alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        if (!responsePatch.ok) {
+          const errorData = await responsePatch.json();
+          throw new Error(errorData.error || 'Error al cambiar estado de mantenimiento');
+        }
+        
+        const data = await responsePatch.json();
+        
+        if (data.success && data.data) {
+          const actualizado = data.data;
+          setPistas(prev => prev.map(p => 
+            p.id === pista.id ? { 
+              ...p, 
+              disponible: actualizado.disponible === true || actualizado.disponible === 1
+            } : p
+          ));
+          
+          alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        }
+      } else {
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          const actualizado = data.data;
+          setPistas(prev => prev.map(p => 
+            p.id === pista.id ? { 
+              ...p, 
+              disponible: actualizado.disponible === true || actualizado.disponible === 1
+            } : p
+          ));
+          
+          alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        }
       }
       
     } catch (error) {
