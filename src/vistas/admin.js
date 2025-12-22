@@ -101,7 +101,7 @@ export default function AdminPanel({ navigation }) {
     return false;
   }, [logout]);
 
-  // ✅ CORREGIDO: Cargar datos incluyendo usuarios
+  // Cargar pistas, reservas, polideportivos y usuarios desde la API
   const fetchData = useCallback(async () => {
     if (!token) {
       console.error('❌ No hay token de autenticación');
@@ -116,73 +116,80 @@ export default function AdminPanel({ navigation }) {
       
       const headers = getHeaders();
       
-      // Cargar polideportivos
-      const polideportivosResponse = await fetch(POLIDEPORTIVOS_URL, { headers });
+      // Cargar polideportivos primero
+      const polideportivosResponse = await fetch(POLIDEPORTIVOS_URL, {
+        headers: headers
+      });
+      
       if (!polideportivosResponse.ok) {
         if (handleAuthError(`Error ${polideportivosResponse.status}: ${await polideportivosResponse.text()}`)) return;
         throw new Error(`Error ${polideportivosResponse.status}: ${await polideportivosResponse.text()}`);
       }
+      
       const polideportivosData = await polideportivosResponse.json();
+      
       if (!polideportivosData.success || !Array.isArray(polideportivosData.data)) {
         throw new Error('Formato de respuesta inválido para polideportivos');
       }
+      
       setPolideportivos(polideportivosData.data);
       
       // Cargar pistas
-      const pistasResponse = await fetch(PISTAS_URL, { headers });
+      const pistasResponse = await fetch(PISTAS_URL, {
+        headers: headers
+      });
+      
       if (!pistasResponse.ok) {
         if (handleAuthError(`Error ${pistasResponse.status}: ${await pistasResponse.text()}`)) return;
         throw new Error(`Error ${pistasResponse.status}: ${await pistasResponse.text()}`);
       }
+      
       const pistasData = await pistasResponse.json();
+      
       if (!pistasData.success || !Array.isArray(pistasData.data)) {
         throw new Error('Formato de respuesta inválido');
       }
+      
+      // Asegurarnos de que cada pista tiene el campo 'disponible' procesado correctamente
       const pistasConEstado = pistasData.data.map(pista => ({
         ...pista,
         disponible: pista.disponible === true || pista.disponible === 1
       }));
-      setPistas(pistasConEstado);
       
-      // Cargar reservas
-      const reservasResponse = await fetch(RESERVAS_URL, { headers });
+      setPistas(pistasConEstado); 
+      
+      // Cargar reservas (todas las reservas para super_admin)
+      const reservasResponse = await fetch(RESERVAS_URL, {
+        headers: headers
+      });
+      
       if (!reservasResponse.ok) {
         if (handleAuthError(`Error ${reservasResponse.status}: ${await reservasResponse.text()}`)) return;
         throw new Error(`Error ${reservasResponse.status}: ${await reservasResponse.text()}`);
       }
+      
       const reservasData = await reservasResponse.json();
+      
       if (!reservasData.success || !Array.isArray(reservasData.data)) {
         throw new Error('Formato de respuesta inválido para reservas');
       }
+      
       setReservas(reservasData.data);
       
-      // ✅ CORREGIDO: Cargar usuarios
-      console.log('📋 Intentando cargar usuarios desde:', USUARIOS_URL);
-      const usuariosResponse = await fetch(USUARIOS_URL, { headers });
-      
-      if (!usuariosResponse.ok) {
-        const errorText = await usuariosResponse.text();
-        console.error('❌ Error al cargar usuarios:', usuariosResponse.status, errorText);
+      // Cargar usuarios (solo super_admin puede ver todos)
+      try {
+        const usuariosResponse = await fetch(USUARIOS_URL, {
+          headers: headers
+        });
         
-        if (usuariosResponse.status === 401 || usuariosResponse.status === 403) {
-          setError('No tienes permisos para ver usuarios. Solo super_admin puede acceder.');
-        } else if (usuariosResponse.status === 404) {
-          console.warn('⚠️ Endpoint /api/usuarios no encontrado');
-          setUsuarios([]);
-        } else {
-          throw new Error(`Error ${usuariosResponse.status}: ${errorText}`);
+        if (usuariosResponse.ok) {
+          const usuariosData = await usuariosResponse.json();
+          if (usuariosData.success && Array.isArray(usuariosData.data)) {
+            setUsuarios(usuariosData.data);
+          }
         }
-      } else {
-        const usuariosData = await usuariosResponse.json();
-        console.log('📊 Respuesta de usuarios:', usuariosData);
-        
-        if (usuariosData.success && Array.isArray(usuariosData.data)) {
-          console.log(`✅ Usuarios cargados correctamente: ${usuariosData.data.length} usuarios`);
-          setUsuarios(usuariosData.data);
-        } else {
-          console.warn('⚠️ Formato de respuesta de usuarios inválido');
-          setUsuarios([]);
-        }
+      } catch (usuariosError) {
+        console.error('Error al cargar usuarios:', usuariosError);
       }
       
     } catch (error) {
@@ -243,9 +250,13 @@ export default function AdminPanel({ navigation }) {
   };
 
   // ========== FUNCIONES PARA GESTIÓN DE PISTAS ==========
+
+  // ✅ CORREGIDA: Función para cambiar estado de mantenimiento
   const toggleMantenimiento = async (pista) => {
     if (!pista || !token) return;
     
+    // Lógica: Si disponible=true → poner en mantenimiento (enMantenimiento=true)
+    //         Si disponible=false → quitar mantenimiento (enMantenimiento=false)
     const enMantenimiento = pista.disponible;
     
     const confirmar = window.confirm(
@@ -260,7 +271,9 @@ export default function AdminPanel({ navigation }) {
       const response = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
         method: 'PATCH',
         headers: getHeaders(),
-        body: JSON.stringify({ enMantenimiento: enMantenimiento }),
+        body: JSON.stringify({
+          enMantenimiento: enMantenimiento
+        }),
       });
       
       if (!response.ok) {
@@ -272,6 +285,7 @@ export default function AdminPanel({ navigation }) {
       
       if (data.success && data.data) {
         const actualizado = data.data;
+        // Actualizar estado localmente
         setPistas(prev => prev.map(p => 
           p.id === pista.id ? { 
             ...p, 
@@ -288,6 +302,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
+  // ✅ CORREGIDA: Función para eliminar pista con manejo de error 409
   const eliminarPista = async (pista) => {
     const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la pista "${pista.nombre}"?\n\nEsta acción no se puede deshacer.`);
     if (!confirmar) return;
@@ -301,6 +316,7 @@ export default function AdminPanel({ navigation }) {
       const data = await response.json();
 
       if (!response.ok) {
+        // Si es error 409, mostrar mensaje específico sobre reservas
         if (response.status === 409) {
           if (data.detalles && data.detalles.reservas) {
             const reservasInfo = data.detalles.reservas
@@ -318,6 +334,7 @@ export default function AdminPanel({ navigation }) {
       }
 
       if (data.success) {
+        // Eliminar de la lista
         setPistas((prevPistas) => prevPistas.filter((p) => p.id !== pista.id));
         alert('✅ Pista eliminada correctamente');
       }
@@ -356,6 +373,7 @@ export default function AdminPanel({ navigation }) {
         polideportivo_id: nuevoPolideportivo
       };
 
+      // Agregar descripción si se proporciona
       if (nuevaDescripcion.trim()) {
         pistaData.descripcion = nuevaDescripcion.trim();
       }
@@ -378,6 +396,7 @@ export default function AdminPanel({ navigation }) {
       }
 
       if (responseData.success && responseData.data) {
+        // Asegurar que la nueva pista tenga el campo 'disponible' procesado
         const nuevaPista = {
           ...responseData.data,
           disponible: responseData.data.disponible === true || responseData.data.disponible === 1
@@ -454,6 +473,7 @@ export default function AdminPanel({ navigation }) {
       }
       
       if (responseData.success && responseData.data) {
+        // Actualizar la lista de pistas
         setPistas(prev => prev.map(p => 
           p.id === pistaEditando.id ? {
             ...responseData.data,
@@ -500,7 +520,9 @@ export default function AdminPanel({ navigation }) {
       const response = await fetch(`${PISTAS_URL}/${pistaEditando.id}/precio`, {
         method: 'PATCH',
         headers: getHeaders(),
-        body: JSON.stringify({ precio: precioNumerico }),
+        body: JSON.stringify({
+          precio: precioNumerico,
+        }),
       });
 
       if (!response.ok) {
@@ -527,6 +549,7 @@ export default function AdminPanel({ navigation }) {
   };
 
   // ========== FUNCIONES PARA GESTIÓN DE POLIDEPORTIVOS ==========
+
   const agregarPolideportivo = async () => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
@@ -557,6 +580,7 @@ export default function AdminPanel({ navigation }) {
 
       setPolideportivos((prevPolideportivos) => [...prevPolideportivos, responseData.data]);
       
+      // Limpiar formulario
       setNuevoPolideportivoNombre('');
       setNuevoPolideportivoDireccion('');
       setNuevoPolideportivoTelefono('');
@@ -574,6 +598,7 @@ export default function AdminPanel({ navigation }) {
       return;
     }
 
+    // Verificar si hay pistas asociadas a este polideportivo
     const pistasAsociadas = pistas.filter(pista => pista.polideportivo_id === id);
     
     if (pistasAsociadas.length > 0) {
@@ -604,6 +629,7 @@ export default function AdminPanel({ navigation }) {
   };
 
   // ========== FUNCIONES PARA GESTIÓN DE RESERVAS ==========
+
   const cancelarReserva = async (id) => {
     const confirmar = window.confirm('¿Estás seguro de que deseas cancelar esta reserva?');
     if (!confirmar) return;
@@ -627,6 +653,7 @@ export default function AdminPanel({ navigation }) {
   };
 
   // ========== FUNCIONES PARA GESTIÓN DE USUARIOS ==========
+
   // Función para abrir modal de cambio de rol
   const abrirModalCambioRol = (usuario, accion, polideportivoId = null) => {
     setUsuarioEditando(usuario);
@@ -636,7 +663,7 @@ export default function AdminPanel({ navigation }) {
     setModalPasswordVisible(true);
   };
 
-  // ✅ CORREGIDO: Función para cambiar rol de usuario
+  // Función para cambiar rol de usuario
   const cambiarRolUsuario = async () => {
     if (!usuarioEditando || !passwordConfirmacion) {
       alert('❌ Error: Debes ingresar tu contraseña para confirmar');
@@ -670,8 +697,6 @@ export default function AdminPanel({ navigation }) {
     setCambiandoRol(true);
     
     try {
-      console.log(`👑 Cambiando rol de usuario ${usuarioEditando.id} a ${nuevoRol}...`);
-      
       const response = await fetch(`${USUARIOS_URL}/cambiar-rol/${usuarioEditando.id}`, {
         method: 'PUT',
         headers: getHeaders(),
@@ -688,17 +713,13 @@ export default function AdminPanel({ navigation }) {
         throw new Error(data.error || 'Error al cambiar rol');
       }
 
-      // ✅ CORREGIDO: Actualizar lista de usuarios correctamente
+      // Actualizar lista de usuarios
       setUsuarios(prev => prev.map(usuario => 
         usuario.id === usuarioEditando.id 
           ? { 
               ...usuario, 
               rol: nuevoRol,
-              polideportivo_id: polideportivoId,
-              polideportivos: polideportivoId ? {
-                id: polideportivoId,
-                nombre: polideportivos.find(p => p.id === polideportivoId)?.nombre || 'Polideportivo'
-              } : null
+              polideportivo_id: polideportivoId
             } 
           : usuario
       ));
@@ -731,6 +752,7 @@ export default function AdminPanel({ navigation }) {
   };
 
   // ========== FUNCIONES AUXILIARES ==========
+
   // Función para obtener el nombre del polideportivo
   const obtenerNombrePolideportivo = (polideportivoId) => {
     const polideportivo = polideportivos.find(p => p.id === polideportivoId);
@@ -760,6 +782,7 @@ export default function AdminPanel({ navigation }) {
   };
 
   // ========== RENDERIZADO DE COMPONENTES ==========
+
   // Renderizado de items de polideportivos
   const renderPolideportivoItem = (item) => (
     <div className="polideportivo-card">
@@ -787,7 +810,7 @@ export default function AdminPanel({ navigation }) {
     </div>
   );
 
-  // Renderizado de pistas
+  // ✅ CORREGIDO: Renderizado de pistas
   const renderPistaItem = (item) => {
     return (
       <div className="pista-card">
@@ -908,128 +931,6 @@ export default function AdminPanel({ navigation }) {
       <div className="section-header-text">
         {getIconoTipoPista(section.title)} {section.title} ({section.data.length})
       </div>
-    </div>
-  );
-
-  // ✅ CORREGIDO: Renderizado de usuarios en tabla
-  const renderUsuariosTab = () => (
-    <div className="tab-content">
-      <div className="list-header">
-        <div className="seccion-header">
-          <div className="seccion-titulo">
-            👥 Gestión de Usuarios ({usuarios.length})
-          </div>
-        </div>
-      </div>
-
-      {usuarios.length === 0 ? (
-        <div className="lista-vacia-container">
-          <div className="lista-vacia">
-            {loading ? 'Cargando usuarios...' : 'No hay usuarios registrados'}
-          </div>
-        </div>
-      ) : (
-        <div className="usuarios-table-container">
-          <table className="usuarios-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Usuario</th>
-                <th>Email</th>
-                <th>DNI</th>
-                <th>Teléfono</th>
-                <th>Fecha Registro</th>
-                <th>Rol</th>
-                <th>Polideportivo</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map(usuario => (
-                <tr key={usuario.id} className="usuario-row">
-                  <td>{usuario.id}</td>
-                  <td>{usuario.nombre}</td>
-                  <td>{usuario.usuario}</td>
-                  <td>{usuario.correo}</td>
-                  <td>{usuario.dni}</td>
-                  <td>{usuario.telefono || 'No'}</td>
-                  <td>
-                    {usuario.fecha_creacion 
-                      ? new Date(usuario.fecha_creacion).toLocaleDateString('es-ES')
-                      : 'N/A'
-                    }
-                  </td>
-                  <td>
-                    <span className={`rol-badge ${usuario.rol === 'super_admin' ? 'rol-admin' : 
-                                      usuario.rol === 'admin_poli' ? 'rol-admin-poli' : 'rol-user'}`}>
-                      {obtenerNombreRol(usuario.rol)}
-                    </span>
-                  </td>
-                  <td>
-                    {usuario.rol === 'admin_poli' ? (
-                      <span className="polideportivo-info">
-                        {usuario.polideportivos?.nombre || obtenerPolideportivoUsuario(usuario)}
-                      </span>
-                    ) : (
-                      <span className="polideportivo-info">-</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="acciones-usuario">
-                      {usuario.rol === 'usuario' ? (
-                        <>
-                          <button
-                            className="boton-accion boton-hacer-admin"
-                            onClick={() => abrirModalCambioRol(usuario, 'admin_global')}
-                            title="Hacer Super Administrador"
-                          >
-                            👑 Super Admin
-                          </button>
-                          <button
-                            className="boton-accion boton-admin-poli"
-                            onClick={() => abrirModalCambioRol(usuario, 'admin_poli')}
-                            title="Hacer Administrador de Polideportivo"
-                          >
-                            🏢 Admin Poli
-                          </button>
-                        </>
-                      ) : usuario.rol === 'admin_poli' ? (
-                        <>
-                          <button
-                            className="boton-accion boton-hacer-admin"
-                            onClick={() => abrirModalCambioRol(usuario, 'admin_global')}
-                            title="Hacer Super Administrador"
-                          >
-                            👑 Super Admin
-                          </button>
-                          <button
-                            className="boton-accion boton-quitar-admin"
-                            onClick={() => abrirModalCambioRol(usuario, 'quitar_admin')}
-                            disabled={usuario.id === user?.id}
-                            title={usuario.id === user?.id ? "No puedes quitarte a ti mismo los privilegios" : "Quitar administrador de polideportivo"}
-                          >
-                            👤 Quitar Admin
-                          </button>
-                        </>
-                      ) : usuario.rol === 'super_admin' ? (
-                        <button
-                          className="boton-accion boton-quitar-admin"
-                          onClick={() => abrirModalCambioRol(usuario, 'quitar_admin')}
-                          disabled={usuario.id === user?.id}
-                          title={usuario.id === user?.id ? "No puedes quitarte a ti mismo los privilegios" : "Quitar super administrador"}
-                        >
-                          👤 Quitar Super Admin
-                        </button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 
@@ -1181,7 +1082,124 @@ export default function AdminPanel({ navigation }) {
         );
 
       case 'usuarios':
-        return renderUsuariosTab();
+        return (
+          <div className="tab-content">
+            <div className="list-header">
+              <div className="seccion-header">
+                <div className="seccion-titulo">
+                  👥 Gestión de Usuarios ({usuarios.length})
+                </div>
+              </div>
+            </div>
+
+            {usuarios.length === 0 ? (
+              <div className="lista-vacia-container">
+                <div className="lista-vacia">
+                  No hay usuarios registrados
+                </div>
+              </div>
+            ) : (
+              <div className="usuarios-table-container">
+                <table className="usuarios-table">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Usuario</th>
+                      <th>Email</th>
+                      <th>DNI</th>
+                      <th>Teléfono</th>
+                      <th>Fecha Registro</th>
+                      <th>Rol</th>
+                      <th>Polideportivo</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usuarios.map(usuario => (
+                      <tr key={usuario.id} className="usuario-row">
+                        <td>{usuario.nombre}</td>
+                        <td>{usuario.usuario}</td>
+                        <td>{usuario.correo}</td>
+                        <td>{usuario.dni}</td>
+                        <td>{usuario.telefono || 'No'}</td>
+                        <td>
+                          {usuario.fecha_creacion 
+                            ? new Date(usuario.fecha_creacion).toLocaleDateString('es-ES')
+                            : 'N/A'
+                          }
+                        </td>
+                        <td>
+                          <span className={`rol-badge ${usuario.rol === 'super_admin' ? 'rol-admin' : 
+                                            usuario.rol === 'admin_poli' ? 'rol-admin-poli' : 'rol-user'}`}>
+                            {obtenerNombreRol(usuario.rol)}
+                          </span>
+                        </td>
+                        <td>
+                          {usuario.rol === 'admin_poli' ? (
+                            <span className="polideportivo-info">
+                              {obtenerPolideportivoUsuario(usuario)}
+                            </span>
+                          ) : (
+                            <span className="polideportivo-info">-</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="acciones-usuario">
+                            {usuario.rol === 'usuario' ? (
+                              <>
+                                <button
+                                  className="boton-accion boton-hacer-admin"
+                                  onClick={() => abrirModalCambioRol(usuario, 'admin_global')}
+                                  title="Hacer Super Administrador"
+                                >
+                                  👑 Super Admin
+                                </button>
+                                <button
+                                  className="boton-accion boton-admin-poli"
+                                  onClick={() => abrirModalCambioRol(usuario, 'admin_poli')}
+                                  title="Hacer Administrador de Polideportivo"
+                                >
+                                  🏢 Admin Poli
+                                </button>
+                              </>
+                            ) : usuario.rol === 'admin_poli' ? (
+                              <>
+                                <button
+                                  className="boton-accion boton-hacer-admin"
+                                  onClick={() => abrirModalCambioRol(usuario, 'admin_global')}
+                                  title="Hacer Super Administrador"
+                                >
+                                  👑 Super Admin
+                                </button>
+                                <button
+                                  className="boton-accion boton-quitar-admin"
+                                  onClick={() => abrirModalCambioRol(usuario, 'quitar_admin')}
+                                  disabled={usuario.id === user?.id}
+                                  title={usuario.id === user?.id ? "No puedes quitarte a ti mismo los privilegios" : "Quitar administrador de polideportivo"}
+                                >
+                                  👤 Quitar Admin
+                                </button>
+                              </>
+                            ) : usuario.rol === 'super_admin' ? (
+                              <button
+                                className="boton-accion boton-quitar-admin"
+                                onClick={() => abrirModalCambioRol(usuario, 'quitar_admin')}
+                                disabled={usuario.id === user?.id}
+                                title={usuario.id === user?.id ? "No puedes quitarte a ti mismo los privilegios" : "Quitar super administrador"}
+                              >
+                                👤 Quitar Super Admin
+                              </button>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
 
       default:
         return null;
