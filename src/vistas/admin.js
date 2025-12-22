@@ -246,10 +246,7 @@ export default function AdminPanel({ navigation }) {
   const toggleMantenimiento = async (pista) => {
     if (!pista || !token) return;
     
-    // CORREGIDO: El estado actual es disponible, pero el endpoint espera enMantenimiento
-    // Si está disponible (true), queremos poner en mantenimiento (enMantenimiento = true)
-    // Si no está disponible (false), queremos reactivar (enMantenimiento = false)
-    const enMantenimiento = pista.disponible; // Si está disponible, poner en mantenimiento
+    const enMantenimiento = pista.disponible;
     
     const confirmar = window.confirm(
       enMantenimiento
@@ -260,42 +257,21 @@ export default function AdminPanel({ navigation }) {
     if (!confirmar) return;
     
     try {
-      console.log('🛠️ Enviando solicitud de mantenimiento:', {
-        pistaId: pista.id,
-        enMantenimiento: enMantenimiento,
-        disponibleActual: pista.disponible
-      });
-      
       const response = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
         method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({ enMantenimiento: enMantenimiento }),
       });
       
-      console.log('📥 Respuesta recibida:', response.status);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Error en respuesta:', errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          errorData = { error: errorText };
-        }
-        throw new Error(errorData.error || `Error ${response.status}: Error al cambiar estado de mantenimiento`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cambiar estado de mantenimiento');
       }
       
       const data = await response.json();
-      console.log('✅ Datos recibidos:', data);
       
       if (data.success && data.data) {
         const actualizado = data.data;
-        console.log('🔄 Actualizando estado de pista:', {
-          id: pista.id,
-          nuevoEstado: actualizado.disponible
-        });
-        
         setPistas(prev => prev.map(p => 
           p.id === pista.id ? { 
             ...p, 
@@ -304,12 +280,10 @@ export default function AdminPanel({ navigation }) {
         ));
         
         alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
-      } else {
-        throw new Error(data.error || 'Error en la respuesta del servidor');
       }
       
     } catch (error) {
-      console.error('❌ Error cambiando mantenimiento:', error);
+      console.error('Error cambiando mantenimiento:', error);
       alert(`❌ Error: ${error.message}`);
     }
   };
@@ -696,11 +670,7 @@ export default function AdminPanel({ navigation }) {
     setCambiandoRol(true);
     
     try {
-      console.log(`👑 Cambiando rol de usuario ${usuarioEditando.id} a ${nuevoRol}...`, {
-        usuario: usuarioEditando.nombre,
-        nuevoRol,
-        polideportivoId
-      });
+      console.log(`👑 Cambiando rol de usuario ${usuarioEditando.id} a ${nuevoRol}...`);
       
       const response = await fetch(`${USUARIOS_URL}/cambiar-rol/${usuarioEditando.id}`, {
         method: 'PUT',
