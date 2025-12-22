@@ -278,46 +278,67 @@ export default function AdminPanel({ navigation }) {
     if (!confirmar) return;
     
     try {
+      // ✅ CAMBIADO: Usar PUT en lugar de PATCH
       const response = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({
-          enMantenimiento: enMantenimiento
+            enMantenimiento: enMantenimiento 
         }),
       });
       
-      const data = await response.json();
-      
+      // Si PUT falla, intentar con PATCH para retrocompatibilidad
       if (!response.ok) {
-        throw new Error(data.error || 'Error al cambiar estado de mantenimiento');
-      }
-      
-      if (data.success && data.data) {
-        const actualizado = data.data;
-        setPistas(prev => prev.map(p => 
-          p.id === pista.id ? { 
-            ...p, 
-            disponible: actualizado.disponible === true || actualizado.disponible === 1
-          } : p
-        ));
+        console.warn('PUT falló, intentando con PATCH...');
+        const responsePatch = await fetch(`${PISTAS_URL}/${pista.id}/mantenimiento`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            enMantenimiento: enMantenimiento
+          }),
+        });
         
-        alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        if (!responsePatch.ok) {
+          const errorData = await responsePatch.json();
+          throw new Error(errorData.error || 'Error al cambiar estado de mantenimiento');
+        }
+        
+        const data = await responsePatch.json();
+        
+        if (data.success && data.data) {
+          const actualizado = data.data;
+          setPistas(prev => prev.map(p => 
+            p.id === pista.id ? { 
+              ...p, 
+              disponible: actualizado.disponible === true || actualizado.disponible === 1
+            } : p
+          ));
+          
+          alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        }
+      } else {
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          const actualizado = data.data;
+          setPistas(prev => prev.map(p => 
+            p.id === pista.id ? { 
+              ...p, 
+              disponible: actualizado.disponible === true || actualizado.disponible === 1
+            } : p
+          ));
+          
+          alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        }
       }
       
     } catch (error) {
       console.error('Error cambiando mantenimiento:', error);
-      
-      if (error.message.includes('403')) {
-        alert('❌ Error: No tienes permisos para modificar esta pista');
-      } else if (error.message.includes('404')) {
-        alert('❌ Error: Pista no encontrada');
-      } else {
-        alert(`❌ Error: ${error.message}`);
-      }
+      alert(`❌ Error: ${error.message}`);
     }
   };
 
-  // ✅ FUNCIÓN PARA ELIMINAR PISTA
+  // ✅ CORREGIDA: Función para eliminar pista con manejo de error 409
   const eliminarPista = async (pista) => {
     const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la pista "${pista.nombre}"?\n\nEsta acción no se puede deshacer.`);
     if (!confirmar) return;
@@ -331,6 +352,7 @@ export default function AdminPanel({ navigation }) {
       const data = await response.json();
 
       if (!response.ok) {
+        // Si es error 409, mostrar mensaje específico sobre reservas
         if (response.status === 409) {
           if (data.detalles && data.detalles.reservas) {
             const reservasInfo = data.detalles.reservas
@@ -348,6 +370,7 @@ export default function AdminPanel({ navigation }) {
       }
 
       if (data.success) {
+        // Eliminar de la lista
         setPistas((prevPistas) => prevPistas.filter((p) => p.id !== pista.id));
         alert('✅ Pista eliminada correctamente');
       }
@@ -358,7 +381,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // AGREGAR NUEVA PISTA
+  // Agregar nueva pista
   const agregarPista = async () => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
@@ -383,9 +406,10 @@ export default function AdminPanel({ navigation }) {
         nombre: nuevoNombre.trim(),
         tipo: nuevoTipo,
         precio: precioNumerico,
-        polideportivo_id: parseInt(nuevoPolideportivo)
+        polideportivo_id: nuevoPolideportivo
       };
 
+      // Agregar descripción si se proporciona
       if (nuevaDescripcion.trim()) {
         pistaData.descripcion = nuevaDescripcion.trim();
       }
@@ -408,6 +432,7 @@ export default function AdminPanel({ navigation }) {
       }
 
       if (responseData.success && responseData.data) {
+        // Asegurar que la nueva pista tenga el campo 'disponible' procesado
         const nuevaPista = {
           ...responseData.data,
           disponible: responseData.data.disponible === true || responseData.data.disponible === 1
@@ -429,7 +454,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ABRIR MODAL PARA EDITAR PISTA COMPLETA
+  // Abrir modal para editar pista completa
   const abrirModalEditarPista = (pista) => {
     setPistaEditando(pista);
     setEditarNombrePista(pista.nombre || '');
@@ -440,7 +465,7 @@ export default function AdminPanel({ navigation }) {
     setModalPistaEdicionVisible(true);
   };
 
-  // GUARDAR CAMBIOS DE PISTA
+  // Guardar cambios de pista
   const guardarCambiosPista = async () => {
     if (!pistaEditando || !token) return;
     
@@ -484,6 +509,7 @@ export default function AdminPanel({ navigation }) {
       }
       
       if (responseData.success && responseData.data) {
+        // Actualizar la lista de pistas
         setPistas(prev => prev.map(p => 
           p.id === pistaEditando.id ? {
             ...responseData.data,
@@ -590,6 +616,7 @@ export default function AdminPanel({ navigation }) {
 
       setPolideportivos((prevPolideportivos) => [...prevPolideportivos, responseData.data]);
       
+      // Limpiar formulario
       setNuevoPolideportivoNombre('');
       setNuevoPolideportivoDireccion('');
       setNuevoPolideportivoTelefono('');
@@ -607,6 +634,7 @@ export default function AdminPanel({ navigation }) {
       return;
     }
 
+    // Verificar si hay pistas asociadas a este polideportivo
     const pistasAsociadas = pistas.filter(pista => pista.polideportivo_id === id);
     
     if (pistasAsociadas.length > 0) {
@@ -662,6 +690,7 @@ export default function AdminPanel({ navigation }) {
 
   // ========== FUNCIONES PARA GESTIÓN DE USUARIOS ==========
 
+  // Función para abrir modal de cambio de rol
   const abrirModalCambioRol = (usuario, accion, polideportivoId = null) => {
     setUsuarioEditando(usuario);
     setAccionSeleccionada(accion);
@@ -670,6 +699,7 @@ export default function AdminPanel({ navigation }) {
     setModalPasswordVisible(true);
   };
 
+  // Función para cambiar rol de usuario
   const cambiarRolUsuario = async () => {
     if (!usuarioEditando || !passwordConfirmacion) {
       alert('❌ Error: Debes ingresar tu contraseña para confirmar');
@@ -679,6 +709,7 @@ export default function AdminPanel({ navigation }) {
     let nuevoRol = '';
     let polideportivoId = null;
     
+    // Determinar el nuevo rol según la acción
     switch(accionSeleccionada) {
       case 'admin_global':
         nuevoRol = 'super_admin';
@@ -718,6 +749,7 @@ export default function AdminPanel({ navigation }) {
         throw new Error(data.error || 'Error al cambiar rol');
       }
 
+      // Actualizar lista de usuarios
       setUsuarios(prev => prev.map(usuario => 
         usuario.id === usuarioEditando.id 
           ? { 
@@ -728,6 +760,7 @@ export default function AdminPanel({ navigation }) {
           : usuario
       ));
 
+      // Cerrar modal y limpiar
       setModalPasswordVisible(false);
       setUsuarioEditando(null);
       setPasswordConfirmacion('');
@@ -756,11 +789,13 @@ export default function AdminPanel({ navigation }) {
 
   // ========== FUNCIONES AUXILIARES ==========
 
+  // Función para obtener el nombre del polideportivo
   const obtenerNombrePolideportivo = (polideportivoId) => {
     const polideportivo = polideportivos.find(p => p.id === polideportivoId);
     return polideportivo ? polideportivo.nombre : 'Desconocido';
   };
 
+  // Función para obtener el polideportivo del usuario
   const obtenerPolideportivoUsuario = (usuario) => {
     if (usuario.polideportivo_id) {
       return obtenerNombrePolideportivo(usuario.polideportivo_id);
@@ -768,6 +803,7 @@ export default function AdminPanel({ navigation }) {
     return 'No asignado';
   };
 
+  // Función para obtener el nombre del rol con emoji
   const obtenerNombreRol = (rol) => {
     switch(rol) {
       case 'super_admin':
@@ -783,6 +819,7 @@ export default function AdminPanel({ navigation }) {
 
   // ========== RENDERIZADO DE COMPONENTES ==========
 
+  // Renderizado de items de polideportivos
   const renderPolideportivoItem = (item) => (
     <div className="polideportivo-card">
       <div className="polideportivo-header">
@@ -809,6 +846,7 @@ export default function AdminPanel({ navigation }) {
     </div>
   );
 
+  // ✅ CORREGIDO: Renderizado de pistas
   const renderPistaItem = (item) => {
     return (
       <div className="pista-card">
@@ -872,6 +910,7 @@ export default function AdminPanel({ navigation }) {
     );
   };
 
+  // Renderizado de reservas
   const renderReservaItem = (item) => (
     <div className="reserva-card">
       <div className="reserva-header">
@@ -922,6 +961,7 @@ export default function AdminPanel({ navigation }) {
     </div>
   );
 
+  // Renderizado de secciones
   const renderSectionHeader = (section) => (
     <div className="section-header">
       <div className="section-header-text">
@@ -990,6 +1030,7 @@ export default function AdminPanel({ navigation }) {
                 </button>
               </div>
 
+              {/* Filtro por polideportivo */}
               <div className="filtro-container">
                 <div className="filtro-label">
                   Filtrar por polideportivo:
@@ -1201,6 +1242,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
+  // Si no es super_admin, mostrar mensaje de acceso denegado
   if (userRole !== 'super_admin') {
     return (
       <div className="error-container">
@@ -1216,6 +1258,7 @@ export default function AdminPanel({ navigation }) {
     );
   }
 
+  // Si hay error, mostrar mensaje
   if (error) {
     return (
       <div className="error-container">
@@ -1239,6 +1282,7 @@ export default function AdminPanel({ navigation }) {
     );
   }
 
+  // Si no hay token, mostrar mensaje de autenticación
   if (!token) {
     return (
       <div className="error-container">
