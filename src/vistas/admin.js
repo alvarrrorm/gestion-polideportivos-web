@@ -382,7 +382,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ✅ CORREGIDA: Función para agregar nueva pista
+  // AGREGAR NUEVA PISTA
   const agregarPista = async () => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
@@ -454,7 +454,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ✅ ABRIR MODAL PARA EDITAR PISTA COMPLETA
+  // ABRIR MODAL PARA EDITAR PISTA COMPLETA
   const abrirModalEditarPista = (pista) => {
     setPistaEditando(pista);
     setEditarNombrePista(pista.nombre || '');
@@ -465,7 +465,7 @@ export default function AdminPanel({ navigation }) {
     setModalPistaEdicionVisible(true);
   };
 
-  // ✅ GUARDAR CAMBIOS DE PISTA - USA LA NUEVA RUTA PUT /api/pistas/:id
+  // GUARDAR CAMBIOS DE PISTA - USA LA NUEVA RUTA PUT /api/pistas/:id
   const guardarCambiosPista = async () => {
     if (!pistaEditando || !token) return;
     
@@ -586,9 +586,8 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== FUNCIONES CORREGIDAS PARA GESTIÓN DE POLIDEPORTIVOS ==========
+  // ========== FUNCIONES PARA GESTIÓN DE POLIDEPORTIVOS ==========
 
-  // ✅ CORREGIDA: Función para agregar polideportivo
   const agregarPolideportivo = async () => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
@@ -630,98 +629,38 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ✅ CORREGIDA: Función para eliminar polideportivo
   const eliminarPolideportivo = async (id) => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
       return;
     }
 
-    // Verificar pistas asociadas localmente (para mostrar mejor feedback)
     const pistasAsociadas = pistas.filter(pista => pista.polideportivo_id === id);
     
     if (pistasAsociadas.length > 0) {
-      const nombresPistas = pistasAsociadas.map(p => `"${p.nombre}"`).join(', ');
-      alert(`❌ No se puede eliminar: Este polideportivo tiene ${pistasAsociadas.length} pista(s) asociada(s).\n\nPistas: ${nombresPistas}\n\nElimina primero todas las pistas antes de eliminar el polideportivo.`);
+      alert(`❌ No se puede eliminar: Este polideportivo tiene ${pistasAsociadas.length} pista(s) asociada(s). Elimina primero todas las pistas antes de eliminar el polideportivo.`);
       return;
     }
 
-    // Obtener nombre del polideportivo para el mensaje de confirmación
-    const polideportivo = polideportivos.find(p => p.id === id);
-    if (!polideportivo) return;
-    
-    const confirmar = window.confirm(
-      `¿Estás seguro de que deseas eliminar el polideportivo "${polideportivo.nombre}"?\n\n📍 Dirección: ${polideportivo.direccion}\n\n⚠️ Esta acción no se puede deshacer.`
-    );
-    
+    const confirmar = window.confirm('¿Estás seguro de que deseas eliminar este polideportivo?');
     if (!confirmar) return;
     
     try {
-      console.log(`🗑️ Intentando eliminar polideportivo ${id}: "${polideportivo.nombre}"`);
-      
       const response = await fetch(`${POLIDEPORTIVOS_URL}/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        // Manejar errores específicos
-        if (response.status === 409) {
-          // Error de conflictos (pistas asociadas o admins asignados)
-          const errorMsg = data.error || 'No se puede eliminar el polideportivo porque tiene elementos asociados.';
-          
-          // Verificar si hay mensajes específicos de pistas
-          if (data.error && data.error.includes('pista(s) asociada(s)')) {
-            // El backend ya verificó pistas adicionales que el frontend pudo haber pasado por alto
-            alert(`❌ ${data.error}\n\nPor favor, elimina todas las pistas asociadas primero.`);
-          } 
-          // Verificar si hay mensajes de administradores asignados
-          else if (data.error && data.error.includes('administrador(es) asignado(s)')) {
-            alert(`❌ ${data.error}\n\nReasigna primero los administradores a otro polideportivo o quítales el rol de administrador.`);
-          }
-          else {
-            alert(`❌ ${errorMsg}`);
-          }
-          return;
-        }
-        
-        if (response.status === 404) {
-          alert(`❌ Polideportivo no encontrado. Puede que ya haya sido eliminado.`);
-          return;
-        }
-        
-        if (response.status === 401 || response.status === 403) {
-          alert('❌ No tienes permisos para eliminar polideportivos.');
-          return;
-        }
-        
-        throw new Error(data.error || `Error ${response.status}: No se pudo eliminar el polideportivo`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar el polideportivo');
       }
 
-      // Éxito - eliminar del estado local
-      if (data.success) {
-        setPolideportivos(prev => prev.filter(p => p.id !== id));
-        alert(`✅ Polideportivo "${polideportivo.nombre}" eliminado correctamente`);
-        
-        // Si estamos en la vista de pistas y este polideportivo está seleccionado en el filtro,
-        // cambiar el filtro a "todos"
-        if (filtroPolideportivo === id.toString()) {
-          setFiltroPolideportivo('todos');
-        }
-      }
-      
+      setPolideportivos((prevPolideportivos) => prevPolideportivos.filter((polideportivo) => polideportivo.id !== id));
+      alert('✅ Polideportivo eliminado correctamente');
     } catch (error) {
       console.error('Error al eliminar polideportivo:', error);
-      
-      if (error.message.includes('Failed to fetch')) {
-        alert('❌ Error de conexión. Verifica tu conexión a internet e intenta nuevamente.');
-      } else if (error.message.includes('NetworkError')) {
-        alert('❌ Error de red. Por favor, intenta nuevamente.');
-      } else {
-        alert(`❌ Error: ${error.message || 'No se pudo eliminar el polideportivo'}`);
-      }
+      alert('❌ Error: ' + (error.message || 'No se pudo eliminar el polideportivo'));
     }
   };
 
@@ -870,48 +809,33 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== RENDERIZADO DE COMPONENTES CORREGIDOS ==========
+  // ========== RENDERIZADO DE COMPONENTES ==========
 
-  const renderPolideportivoItem = (item) => {
-    const pistasEnPolideportivo = pistas.filter(p => p.polideportivo_id === item.id);
-    const tienePistas = pistasEnPolideportivo.length > 0;
-    
-    return (
-      <div className="polideportivo-card">
-        <div className="polideportivo-header">
-          <div className="polideportivo-info">
-            <div className="polideportivo-nombre">🏟️ {item.nombre}</div>
-            <div className="polideportivo-direccion">📍 {item.direccion}</div>
-            {item.telefono && (
-              <div className="polideportivo-telefono">📞 Tel: {item.telefono}</div>
-            )}
-          </div>
-          <div className="pistas-count-container">
-            <span className={`pistas-count ${tienePistas ? 'pistas-count-warning' : 'pistas-count-ok'}`}>
-              {pistasEnPolideportivo.length} {pistasEnPolideportivo.length === 1 ? 'pista' : 'pistas'}
-              {tienePistas && <div className="warning-indicator">⚠️ Tiene pistas</div>}
-            </span>
-          </div>
-        </div>
-
-        <div className="polideportivo-actions">
-          {tienePistas ? (
-            <div className="warning-message">
-              ⚠️ Para eliminar este polideportivo, primero debes eliminar sus {pistasEnPolideportivo.length} pista(s)
-            </div>
-          ) : (
-            <button
-              className="boton-accion boton-eliminar"
-              onClick={() => eliminarPolideportivo(item.id)}
-              title={`Eliminar "${item.nombre}"`}
-            >
-              🗑️ Eliminar Polideportivo
-            </button>
+  const renderPolideportivoItem = (item) => (
+    <div className="polideportivo-card">
+      <div className="polideportivo-header">
+        <div className="polideportivo-info">
+          <div className="polideportivo-nombre">🏟️ {item.nombre}</div>
+          <div className="polideportivo-direccion">📍 {item.direccion}</div>
+          {item.telefono && (
+            <div className="polideportivo-telefono">📞 Tel: {item.telefono}</div>
           )}
         </div>
+        <div className="pistas-count-container">
+          <span className="pistas-count">
+            {pistas.filter(p => p.polideportivo_id === item.id).length} pistas
+          </span>
+        </div>
       </div>
-    );
-  };
+
+      <button
+        className="boton-accion boton-eliminar"
+        onClick={() => eliminarPolideportivo(item.id)}
+      >
+        🗑️ Eliminar
+      </button>
+    </div>
+  );
 
   const renderPistaItem = (item) => {
     return (
