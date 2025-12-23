@@ -8,7 +8,6 @@ const API_URL = 'https://tfgv2-production.up.railway.app/api';
 
 // ========== COMPONENTES MODALES MEMOIZADOS ==========
 
-// Modal de confirmación de reserva
 const ConfirmReservaModal = memo(({
   show,
   onClose,
@@ -56,7 +55,6 @@ const ConfirmReservaModal = memo(({
   );
 });
 
-// Modal de cancelación de reserva
 const CancelReservaModal = memo(({
   show,
   onClose,
@@ -104,7 +102,6 @@ const CancelReservaModal = memo(({
   );
 });
 
-// Modal de cambio de precio
 const PriceModal = memo(({
   show,
   onClose,
@@ -166,7 +163,6 @@ const PriceModal = memo(({
   );
 });
 
-// Modal de detalles/edición de pista (actualizado para incluir precio)
 const PistaModal = memo(({
   show,
   onClose,
@@ -299,7 +295,6 @@ const PistaModal = memo(({
   );
 });
 
-// Modal para agregar nueva pista
 const AddPistaModal = memo(({
   show,
   onClose,
@@ -443,10 +438,10 @@ const AddPistaModal = memo(({
   );
 });
 
-// ========== COMPONENTE PRINCIPAL CORREGIDO ==========
+// ========== COMPONENTE PRINCIPAL ==========
 
 export default function AdminPoli() {
-  const { user, token, logout } = useAuth(); // Añadido logout
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState({
@@ -503,15 +498,15 @@ export default function AdminPoli() {
   const nombreAdmin = user?.nombre || 'Administrador';
   const userRole = user?.rol || 'usuario';
 
-  // Verificar que el usuario es admin_poli o super_admin
+  // Verificar que el usuario es admin_poli
   useEffect(() => {
-    if (userRole !== 'admin_poli' && userRole !== 'super_admin') {
-      alert('Acceso denegado. Solo administradores pueden acceder a esta página.');
+    if (userRole !== 'admin_poli') {
+      alert('Acceso denegado. Solo administradores de polideportivo pueden acceder a esta página.');
       navigate('/reservas');
     }
   }, [userRole, navigate]);
 
-  // Colores para modo oscuro
+  // Colores para modo oscuro/claro
   const colors = darkMode ? {
     background: '#0F172A',
     surface: '#1E293B',
@@ -586,7 +581,7 @@ export default function AdminPoli() {
 
   // ========== FUNCIONES UTILITARIAS ==========
 
-  // Formatear fecha - memoizada
+  // Formatear fecha
   const formatFecha = useCallback((fecha) => {
     if (!fecha) return 'N/A';
     try {
@@ -597,7 +592,7 @@ export default function AdminPoli() {
     }
   }, []);
 
-  // Formatear hora - memoizada
+  // Formatear hora
   const formatHora = useCallback((hora) => {
     if (!hora) return 'N/A';
     return hora.slice(0, 5);
@@ -625,13 +620,6 @@ export default function AdminPoli() {
 
     try {
       setLoading(prev => ({ ...prev, polideportivo: true }));
-
-      // Si es super_admin, puede que no tenga polideportivo asignado
-      if (userRole === 'super_admin') {
-        setPolideportivo(null);
-        setLoading(prev => ({ ...prev, polideportivo: false }));
-        return;
-      }
 
       const response = await fetch(`${API_URL}/admin-poli/mi-polideportivo`, {
         headers: getHeaders()
@@ -665,13 +653,12 @@ export default function AdminPoli() {
 
     } catch (error) {
       console.error('❌ Error cargando polideportivo:', error.message);
-      console.warn(`⚠️ Error al cargar datos del polideportivo: ${error.message}`);
     } finally {
       setLoading(prev => ({ ...prev, polideportivo: false }));
     }
-  }, [token, userRole, handleAuthError]);
+  }, [token, handleAuthError]);
 
-  // ✅ CORREGIDO: Cargar pistas del polideportivo
+  // Cargar pistas del polideportivo
   const cargarPistas = useCallback(async () => {
     if (!token) {
       console.error('❌ Faltan token para cargar pistas');
@@ -681,17 +668,7 @@ export default function AdminPoli() {
     try {
       setLoading(prev => ({ ...prev, pistas: true }));
 
-      let url;
-      if (userRole === 'admin_poli') {
-        url = `${API_URL}/pistas/mi-polideportivo/pistas`;
-      } else if (userRole === 'super_admin') {
-        url = `${API_URL}/pistas`;
-      } else {
-        console.error('❌ Rol no válido para cargar pistas');
-        return;
-      }
-
-      const response = await fetch(url, {
+      const response = await fetch(`${API_URL}/pistas/mi-polideportivo/pistas`, {
         headers: getHeaders()
       });
 
@@ -729,9 +706,9 @@ export default function AdminPoli() {
     } finally {
       setLoading(prev => ({ ...prev, pistas: false }));
     }
-  }, [token, userRole, handleAuthError]);
+  }, [token, handleAuthError]);
 
-  // ✅ CORREGIDO: Cargar reservas del polideportivo
+  // Cargar reservas del polideportivo
   const cargarReservas = useCallback(async () => {
     if (!token) {
       console.error('❌ Faltan token para cargar reservas');
@@ -741,17 +718,7 @@ export default function AdminPoli() {
     try {
       setLoading(prev => ({ ...prev, reservas: true }));
 
-      let url;
-      if (userRole === 'admin_poli') {
-        url = `${API_URL}/reservas/admin-poli/reservas`;
-      } else if (userRole === 'super_admin') {
-        url = `${API_URL}/reservas`;
-      } else {
-        console.error('❌ Rol no válido para cargar reservas');
-        return;
-      }
-
-      const response = await fetch(url, {
+      const response = await fetch(`${API_URL}/reservas/admin-poli/reservas`, {
         headers: getHeaders()
       });
 
@@ -789,7 +756,7 @@ export default function AdminPoli() {
     } finally {
       setLoading(prev => ({ ...prev, reservas: false }));
     }
-  }, [token, userRole, handleAuthError]);
+  }, [token, handleAuthError]);
 
   // Cargar estadísticas
   const cargarEstadisticas = useCallback(async () => {
@@ -800,12 +767,6 @@ export default function AdminPoli() {
 
     try {
       setLoading(prev => ({ ...prev, estadisticas: true }));
-
-      if (userRole !== 'admin_poli') {
-        setEstadisticas(null);
-        setLoading(prev => ({ ...prev, estadisticas: false }));
-        return;
-      }
 
       const response = await fetch(`${API_URL}/admin-poli/estadisticas`, {
         headers: getHeaders()
@@ -842,7 +803,7 @@ export default function AdminPoli() {
     } finally {
       setLoading(prev => ({ ...prev, estadisticas: false }));
     }
-  }, [token, userRole, handleAuthError]);
+  }, [token, handleAuthError]);
 
   // Cargar todos los datos
   const cargarTodosLosDatos = useCallback(async () => {
@@ -864,16 +825,15 @@ export default function AdminPoli() {
     }
   }, [cargarPolideportivo, cargarPistas, cargarReservas, cargarEstadisticas, token]);
 
-  // Efecto para cargar datos iniciales y recargar cuando cambie refreshTrigger
+  // Efecto para cargar datos iniciales
   useEffect(() => {
-    if (token && (userRole === 'admin_poli' || userRole === 'super_admin')) {
+    if (token && userRole === 'admin_poli') {
       cargarTodosLosDatos();
     }
   }, [token, userRole, cargarTodosLosDatos, refreshTrigger]);
 
-  // ========== FUNCIONES PARA RESERVAS (CORREGIDAS) ==========
+  // ========== FUNCIONES PARA RESERVAS ==========
 
-  // Confirmar reserva - CORREGIDO
   const handleConfirmarReserva = useCallback((reserva) => {
     setSelectedReserva(reserva);
     setShowConfirmModal(true);
@@ -896,16 +856,10 @@ export default function AdminPoli() {
       const data = await response.json();
 
       if (data.success) {
-        // ✅ ACTUALIZACIÓN INMEDIATA DEL ESTADO
         setReservas(prev => prev.map(r =>
           r.id === selectedReserva.id ? { ...r, estado: 'confirmada' } : r
         ));
-
-        // ✅ ACTUALIZAR ESTADÍSTICAS DESPUÉS DE LA OPERACIÓN
-        if (userRole === 'admin_poli') {
-          cargarEstadisticas();
-        }
-
+        cargarEstadisticas();
         alert('✅ Reserva confirmada exitosamente');
       }
 
@@ -916,9 +870,8 @@ export default function AdminPoli() {
       setShowConfirmModal(false);
       setSelectedReserva(null);
     }
-  }, [selectedReserva, token, userRole, cargarEstadisticas]);
+  }, [selectedReserva, token, cargarEstadisticas]);
 
-  // Cancelar reserva - CORREGIDO
   const handleCancelarReserva = useCallback((reserva) => {
     setSelectedReserva(reserva);
     setShowCancelModal(true);
@@ -941,16 +894,10 @@ export default function AdminPoli() {
       const data = await response.json();
 
       if (data.success) {
-        // ✅ ACTUALIZACIÓN INMEDIATA DEL ESTADO
         setReservas(prev => prev.map(r =>
           r.id === selectedReserva.id ? { ...r, estado: 'cancelada' } : r
         ));
-
-        // ✅ ACTUALIZAR ESTADÍSTICAS DESPUÉS DE LA OPERACIÓN
-        if (userRole === 'admin_poli') {
-          cargarEstadisticas();
-        }
-
+        cargarEstadisticas();
         alert('✅ Reserva cancelada exitosamente');
       }
 
@@ -961,60 +908,32 @@ export default function AdminPoli() {
       setShowCancelModal(false);
       setSelectedReserva(null);
     }
-  }, [selectedReserva, token, userRole, cargarEstadisticas]);
+  }, [selectedReserva, token, cargarEstadisticas]);
 
-  // Reenviar email de confirmación
-  const reenviarEmailReserva = useCallback(async (reservaId) => {
-    if (!token) return;
+  // ========== FUNCIONES PARA PISTAS ==========
 
-    try {
-      const response = await fetch(`${API_URL}/reservas/${reservaId}/reenviar-email`, {
-        method: 'POST',
-        headers: getHeaders()
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al reenviar email');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert('✅ Email reenviado exitosamente');
-      }
-
-    } catch (error) {
-      console.error('Error reenviando email:', error);
-      alert(`❌ Error: ${error.message}`);
-    }
-  }, [token]);
-
-  // ========== FUNCIONES PARA PISTAS (CORREGIDAS) ==========
-
-
-  // ✅ CORREGIDO: Cambiar estado de mantenimiento - VERSIÓN FINAL
+  // ✅ CORREGIDO: Cambiar estado de mantenimiento
   const toggleMantenimiento = useCallback(async (pista) => {
     if (!pista || !token) return;
 
-    // Lógica: Si disponible=true → poner en mantenimiento (enMantenimiento=true)
-    //         Si disponible=false → quitar mantenimiento (enMantenimiento=false)
-    const enMantenimiento = pista.disponible; // ¡ESTO ES CORRECTO!
+    // CORRECCIÓN: Usar el valor opuesto al estado actual
+    const nuevoEstado = !pista.disponible;
 
     const confirmar = window.confirm(
-      enMantenimiento
-        ? `¿Poner la pista "${pista.nombre}" en mantenimiento?`
-        : `¿Reactivar la pista "${pista.nombre}"?`
+      !pista.disponible
+        ? `¿Reactivar la pista "${pista.nombre}"?`
+        : `¿Poner la pista "${pista.nombre}" en mantenimiento?`
     );
 
     if (!confirmar) return;
 
     try {
+      // ✅ Enviar "disponible" como booleano
       const response = await fetch(`${API_URL}/pistas/${pista.id}/mantenimiento`, {
         method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({
-          enMantenimiento: enMantenimiento  // ← ¡CORRECTO!
+          disponible: nuevoEstado
         })
       });
 
@@ -1026,29 +945,20 @@ export default function AdminPoli() {
       const data = await response.json();
 
       if (data.success && data.data) {
-        const actualizado = data.data;
-        // Actualizar estado localmente
         setPistas(prev => prev.map(p =>
-          p.id === pista.id ? {
-            ...p,
-            disponible: actualizado.disponible
-          } : p
+          p.id === pista.id ? { ...p, disponible: nuevoEstado } : p
         ));
-
-        if (userRole === 'admin_poli') {
-          cargarEstadisticas();
-        }
-
-        alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        cargarEstadisticas();
+        alert(`✅ Pista ${nuevoEstado ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
       }
 
     } catch (error) {
       console.error('Error cambiando mantenimiento:', error);
       alert(`❌ Error: ${error.message}`);
     }
-  }, [token, userRole, cargarEstadisticas]);
+  }, [token, cargarEstadisticas]);
 
-  // ✅ CORREGIDO: Cambiar precio de pista
+  // Cambiar precio de pista
   const handleCambiarPrecio = useCallback((pista) => {
     setSelectedPista(pista);
     setNuevoPrecio(pista.precio ? pista.precio.toString() : '0');
@@ -1079,11 +989,9 @@ export default function AdminPoli() {
       const data = await response.json();
 
       if (data.success && data.data) {
-        // ✅ ACTUALIZACIÓN INMEDIATA DEL ESTADO
         setPistas(prev => prev.map(p =>
           p.id === selectedPista.id ? { ...p, precio: precioNum } : p
         ));
-
         alert('✅ Precio actualizado exitosamente');
       }
 
@@ -1097,7 +1005,7 @@ export default function AdminPoli() {
     }
   }, [selectedPista, nuevoPrecio, token]);
 
-  // ✅ CORREGIDO: Ver/editar detalles de pista
+  // Ver/editar detalles de pista
   const handleVerDetallesPista = useCallback((pista) => {
     setEditingPista({ ...pista });
     setNuevoNombrePista(pista.nombre || '');
@@ -1111,7 +1019,6 @@ export default function AdminPoli() {
   const actualizarPista = useCallback(async () => {
     if (!editingPista || !token) return;
 
-    // Validaciones
     if (!nuevoNombrePista.trim()) {
       alert('⚠️ El nombre de la pista es obligatorio');
       return;
@@ -1152,11 +1059,9 @@ export default function AdminPoli() {
       }
 
       if (responseData.success && responseData.data) {
-        // ✅ ACTUALIZACIÓN INMEDIATA DEL ESTADO CON DATOS COMPLETOS
         setPistas(prev => prev.map(p =>
           p.id === editingPista.id ? responseData.data : p
         ));
-
         alert('✅ Pista actualizada exitosamente');
         setShowPistaModal(false);
         setEditingPista(null);
@@ -1173,47 +1078,7 @@ export default function AdminPoli() {
     }
   }, [editingPista, token, nuevoNombrePista, nuevoTipoPista, nuevoPrecio, nuevaDescripcion]);
 
-  // ✅ CORREGIDO: Eliminar pista (solo para super_admin)
-  const handleEliminarPista = useCallback(async (pistaId) => {
-    if (userRole !== 'super_admin') {
-      alert('❌ Solo el super administrador puede eliminar pistas');
-      return;
-    }
-
-    const confirmar = window.confirm('¿Estás seguro de que deseas eliminar esta pista? Esta acción no se puede deshacer.');
-    if (!confirmar) return;
-
-    try {
-      const response = await fetch(`${API_URL}/pistas/${pistaId}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar pista');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // ✅ ACTUALIZACIÓN INMEDIATA DEL ESTADO
-        setPistas(prev => prev.filter(p => p.id !== pistaId));
-        alert('✅ Pista eliminada exitosamente');
-
-        // ✅ RECARGAR DATOS PARA ACTUALIZAR ESTADÍSTICAS
-        setRefreshTrigger(prev => prev + 1);
-      }
-
-    } catch (error) {
-      console.error('Error eliminando pista:', error);
-      alert(`❌ Error: ${error.message}`);
-    }
-  }, [token, userRole]);
-
-  // ========== FUNCIONES PARA AGREGAR PISTA (CORREGIDAS) ==========
-
-  // Abrir modal para agregar pista
+  // Agregar nueva pista
   const handleAgregarPista = useCallback(() => {
     setNuevaPistaNombre('');
     setNuevaPistaTipo('Fútbol');
@@ -1223,7 +1088,6 @@ export default function AdminPoli() {
     setShowAddPistaModal(true);
   }, []);
 
-  // ✅ CORREGIDO: Agregar nueva pista
   const agregarPista = useCallback(async () => {
     if (!token) {
       alert('No estás autenticado.');
@@ -1232,7 +1096,6 @@ export default function AdminPoli() {
 
     setErrorNombreRepetido('');
 
-    // Validaciones
     if (!nuevaPistaNombre.trim()) {
       alert('⚠️ El nombre de la pista es obligatorio');
       return;
@@ -1255,23 +1118,18 @@ export default function AdminPoli() {
     }
 
     try {
-      // Preparar datos para la petición
+      // ✅ NOTA: El backend ahora manejará el polideportivo_id automáticamente
       const pistaData = {
         nombre: nuevaPistaNombre.trim(),
         tipo: nuevaPistaTipo,
         precio: precioNum
       };
 
-      // Agregar descripción si se proporciona
       if (nuevaPistaDescripcion.trim()) {
         pistaData.descripcion = nuevaPistaDescripcion.trim();
       }
 
-      // Si es super_admin y quiere crear en un polideportivo específico
-      if (userRole === 'super_admin' && idPolideportivo) {
-        pistaData.polideportivo_id = idPolideportivo;
-      }
-
+      // ❌ NO enviar polideportivo_id - el backend lo obtiene del usuario
       const response = await fetch(`${API_URL}/pistas`, {
         method: 'POST',
         headers: getHeaders(),
@@ -1290,20 +1148,13 @@ export default function AdminPoli() {
       }
 
       if (responseData.success && responseData.data) {
-        // ✅ ACTUALIZACIÓN INMEDIATA DEL ESTADO
         setPistas(prev => [...prev, responseData.data]);
-
         setNuevaPistaNombre('');
         setNuevaPistaTipo('Fútbol');
         setNuevaPistaPrecio('');
         setNuevaPistaDescripcion('');
         setShowAddPistaModal(false);
-
-        // ✅ RECARGAR DATOS PARA ACTUALIZAR ESTADÍSTICAS
-        if (userRole === 'admin_poli') {
-          cargarEstadisticas();
-        }
-
+        cargarEstadisticas();
         alert('✅ Pista agregada correctamente');
       }
 
@@ -1311,11 +1162,10 @@ export default function AdminPoli() {
       console.error('Error al agregar pista:', error);
       alert(`❌ Error: ${error.message}`);
     }
-  }, [token, userRole, idPolideportivo, nuevaPistaNombre, nuevaPistaTipo, nuevaPistaPrecio, nuevaPistaDescripcion, cargarEstadisticas]);
+  }, [token, nuevaPistaNombre, nuevaPistaTipo, nuevaPistaPrecio, nuevaPistaDescripcion, cargarEstadisticas]);
 
   // ========== FUNCIONES AUXILIARES ==========
 
-  // Obtener color según estado
   const getEstadoColor = useCallback((estado) => {
     switch (estado?.toLowerCase()) {
       case 'confirmada': return colors.success;
@@ -1325,49 +1175,15 @@ export default function AdminPoli() {
     }
   }, [colors]);
 
-  // Obtener color según estado de pista
   const getPistaEstadoColor = useCallback((pista) => {
     if (!pista.disponible) return colors.danger;
     return colors.success;
   }, [colors]);
 
-  // Exportar reservas a CSV
-  const exportarReservas = useCallback(() => {
-    if (reservas.length === 0) {
-      alert('No hay reservas para exportar');
-      return;
-    }
-
-    const csvContent = reservas.map(r =>
-      `${r.id},${r.nombre_usuario || 'N/A'},${r.pistas?.nombre || 'N/A'},${r.fecha},${r.hora_inicio},${r.estado},${r.precio || '0'}`
-    ).join('\n');
-
-    const blob = new Blob([`ID,Usuario,Pista,Fecha,Hora,Estado,Precio\n${csvContent}`], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reservas_${polideportivo?.nombre || 'polideportivo'}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  }, [reservas, polideportivo]);
-
-  // Función para recargar todos los datos
-  const recargarDatos = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
-  }, []);
-
   // Filtrar reservas
   const reservasFiltradas = reservas.filter(reserva => {
-    if (filtroEstado !== 'todas' && reserva.estado !== filtroEstado) {
-      return false;
-    }
-
-    if (filtroFecha && reserva.fecha !== filtroFecha) {
-      return false;
-    }
-
+    if (filtroEstado !== 'todas' && reserva.estado !== filtroEstado) return false;
+    if (filtroFecha && reserva.fecha !== filtroFecha) return false;
     if (searchTerm && activeTab === 'reservas') {
       const term = searchTerm.toLowerCase();
       return (
@@ -1375,16 +1191,12 @@ export default function AdminPoli() {
         (reserva.pistas?.nombre && reserva.pistas.nombre.toLowerCase().includes(term))
       );
     }
-
     return true;
   });
 
   // Filtrar pistas
   const pistasFiltradas = pistas.filter(pista => {
-    if (filtroTipoPista !== 'todos' && pista.tipo !== filtroTipoPista) {
-      return false;
-    }
-
+    if (filtroTipoPista !== 'todos' && pista.tipo !== filtroTipoPista) return false;
     if (searchTerm && activeTab === 'pistas') {
       const term = searchTerm.toLowerCase();
       return (
@@ -1393,13 +1205,17 @@ export default function AdminPoli() {
         (pista.descripcion && pista.descripcion.toLowerCase().includes(term))
       );
     }
-
     return true;
   });
 
+  // Función para recargar datos
+  const recargarDatos = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
   // ========== RENDERIZADO PRINCIPAL ==========
 
-  if (userRole !== 'admin_poli' && userRole !== 'super_admin') {
+  if (userRole !== 'admin_poli') {
     return (
       <div className="error-container" style={{ backgroundColor: colors.background }}>
         <div className="error-icon" style={{ color: colors.danger }}>
@@ -1407,7 +1223,7 @@ export default function AdminPoli() {
         </div>
         <h2 style={{ color: colors.text }}>Acceso Denegado</h2>
         <p style={{ color: colors.textSecondary }}>
-          Solo los administradores pueden acceder a esta página.
+          Solo los administradores de polideportivo pueden acceder a esta página.
         </p>
         <button
           onClick={() => navigate('/reservas')}
@@ -1426,34 +1242,7 @@ export default function AdminPoli() {
     );
   }
 
-  if (userRole === 'admin_poli' && !idPolideportivo) {
-    return (
-      <div className="error-container" style={{ backgroundColor: colors.background }}>
-        <div className="error-icon" style={{ color: colors.danger }}>
-          ⚠️
-        </div>
-        <h2 style={{ color: colors.text }}>No tienes un polideportivo asignado</h2>
-        <p style={{ color: colors.textSecondary }}>
-          Contacta con el super administrador para que te asigne un polideportivo.
-        </p>
-        <button
-          onClick={() => navigate('/reservas')}
-          style={{
-            backgroundColor: colors.primary,
-            color: '#fff',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          Volver
-        </button>
-      </div>
-    );
-  }
-
-  if (loading.polideportivo || loading.pistas || loading.reservas) {
+  if (loading.polideportivo) {
     return (
       <div className="loading-container" style={{ backgroundColor: colors.background }}>
         <div className="loading-spinner">⏳</div>
@@ -1466,7 +1255,7 @@ export default function AdminPoli() {
 
   return (
     <div className="admin-poli-container" style={{ backgroundColor: colors.background }}>
-      {/* Modales optimizados */}
+      {/* Modales */}
       <ConfirmReservaModal
         show={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
@@ -1549,25 +1338,17 @@ export default function AdminPoli() {
           <div>
             <h1 style={{ color: colors.text }}>Panel de Administrador</h1>
             <div className="header-subtitle" style={{ color: colors.textSecondary }}>
-              {userRole === 'admin_poli' ? (
-                <>
-                  🏟️ <strong>{polideportivo?.nombre || 'Sin polideportivo asignado'}</strong> • 👤 {nombreAdmin}
-                </>
-              ) : (
-                <>
-                  👑 <strong>Super Administrador</strong> • 🌍 Todos los polideportivos • 👤 {nombreAdmin}
-                </>
-              )}
+              🏟️ <strong>{polideportivo?.nombre || 'Sin polideportivo asignado'}</strong> • 👤 {nombreAdmin}
             </div>
           </div>
         </div>
 
         <div className="header-right">
           <div className="role-badge" style={{
-            backgroundColor: userRole === 'super_admin' ? colors.warning + '20' : colors.primary + '20',
-            color: userRole === 'super_admin' ? colors.warning : colors.primary
+            backgroundColor: colors.primary + '20',
+            color: colors.primary
           }}>
-            {userRole === 'super_admin' ? '👑 Super Admin' : '🏢 Admin Polideportivo'}
+            🏢 Admin Polideportivo
           </div>
 
           <button
@@ -1594,14 +1375,6 @@ export default function AdminPoli() {
             title="Recargar datos"
           >
             🔄 Recargar
-          </button>
-
-          <button
-            className="export-button"
-            onClick={exportarReservas}
-            style={{ backgroundColor: colors.primary, color: '#fff' }}
-          >
-            📥 Exportar CSV
           </button>
         </div>
       </header>
@@ -1644,7 +1417,7 @@ export default function AdminPoli() {
           </div>
         </div>
 
-        {/* Pestañas y controles */}
+        {/* Pestañas */}
         <div className="tabs-section" style={{ backgroundColor: colors.card }}>
           <div className="tabs">
             <button
@@ -1669,21 +1442,19 @@ export default function AdminPoli() {
               🎾 Pistas ({pistas.length})
             </button>
 
-            {userRole === 'admin_poli' && (
-              <button
-                className={`tab ${activeTab === 'estadisticas' ? 'active' : ''}`}
-                onClick={() => setActiveTab('estadisticas')}
-                style={{
-                  color: activeTab === 'estadisticas' ? colors.primary : colors.textSecondary,
-                  borderBottomColor: activeTab === 'estadisticas' ? colors.primary : 'transparent'
-                }}
-              >
-                📊 Estadísticas
-              </button>
-            )}
+            <button
+              className={`tab ${activeTab === 'estadisticas' ? 'active' : ''}`}
+              onClick={() => setActiveTab('estadisticas')}
+              style={{
+                color: activeTab === 'estadisticas' ? colors.primary : colors.textSecondary,
+                borderBottomColor: activeTab === 'estadisticas' ? colors.primary : 'transparent'
+              }}
+            >
+              📊 Estadísticas
+            </button>
           </div>
 
-          {/* Controles de filtro y búsqueda */}
+          {/* Controles */}
           <div className="controls">
             <div className="search-box">
               🔍
@@ -1753,7 +1524,7 @@ export default function AdminPoli() {
           </div>
         </div>
 
-        {/* Contenido de la pestaña activa */}
+        {/* Contenido de la pestaña */}
         <div className="content-area">
           {activeTab === 'reservas' ? (
             /* Tabla de Reservas */
@@ -1853,16 +1624,6 @@ export default function AdminPoli() {
                                 </button>
                               </>
                             )}
-                            {reserva.estado === 'confirmada' && (
-                              <button
-                                className="accion-btn email"
-                                onClick={() => reenviarEmailReserva(reserva.id)}
-                                title="Reenviar email de confirmación"
-                                style={{ backgroundColor: colors.primary + '20' }}
-                              >
-                                ✉️
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -1876,7 +1637,7 @@ export default function AdminPoli() {
             <div className="table-container" style={{ backgroundColor: colors.card }}>
               <div className="table-header" style={{ borderBottomColor: colors.border }}>
                 <div className="table-title" style={{ color: colors.text }}>
-                  🎾 {userRole === 'admin_poli' ? 'Pistas del Polideportivo' : 'Todas las Pistas'} ({pistas.length})
+                  🎾 Pistas del Polideportivo ({pistas.length})
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
@@ -1945,7 +1706,6 @@ export default function AdminPoli() {
                     <tr style={{ borderBottomColor: colors.border }}>
                       <th style={{ color: colors.text }}>Nombre</th>
                       <th style={{ color: colors.text }}>Tipo</th>
-                      {userRole === 'super_admin' && <th style={{ color: colors.text }}>Polideportivo</th>}
                       <th style={{ color: colors.text }}>Estado</th>
                       <th style={{ color: colors.text }}>Precio/hora</th>
                       <th style={{ color: colors.text }}>Acciones</th>
@@ -1963,11 +1723,6 @@ export default function AdminPoli() {
                           )}
                         </td>
                         <td style={{ color: colors.textSecondary }}>{pista.tipo}</td>
-                        {userRole === 'super_admin' && (
-                          <td style={{ color: colors.textSecondary }}>
-                            {pista.polideportivo_nombre || 'N/A'}
-                          </td>
-                        )}
                         <td>
                           <span
                             className="estado-badge"
@@ -2012,16 +1767,6 @@ export default function AdminPoli() {
                             >
                               {pista.disponible ? '⚠️' : '🔧'}
                             </button>
-                            {userRole === 'super_admin' && (
-                              <button
-                                className="accion-btn delete"
-                                onClick={() => handleEliminarPista(pista.id)}
-                                title="Eliminar pista"
-                                style={{ backgroundColor: colors.danger + '20' }}
-                              >
-                                🗑️
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -2031,7 +1776,7 @@ export default function AdminPoli() {
               )}
             </div>
           ) : (
-            /* Estadísticas (solo para admin_poli) */
+            /* Estadísticas */
             <div className="estadisticas-container" style={{ backgroundColor: colors.card }}>
               <div className="estadisticas-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ color: colors.text }}>📊 Estadísticas del Polideportivo</h3>
