@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexto/AuthProvider';
 import './AdminPanel.css';
 
-// URLs de la API - CORREGIDAS
+// URLs de la API
 const API_BASE = 'https://tfgv2-production.up.railway.app/api';
 const PISTAS_URL = `${API_BASE}/pistas`;
 const RESERVAS_URL = `${API_BASE}/reservas`;
@@ -101,7 +101,7 @@ export default function AdminPanel({ navigation }) {
     return false;
   }, [logout]);
 
-  // Cargar pistas, reservas, polideportivos y usuarios desde la API
+  // Cargar datos desde la API
   const fetchData = useCallback(async () => {
     if (!token) {
       console.error('❌ No hay token de autenticación');
@@ -116,7 +116,7 @@ export default function AdminPanel({ navigation }) {
       
       const headers = getHeaders();
       
-      // Cargar polideportivos primero
+      // Cargar polideportivos
       const polideportivosResponse = await fetch(POLIDEPORTIVOS_URL, {
         headers: headers
       });
@@ -150,7 +150,6 @@ export default function AdminPanel({ navigation }) {
         throw new Error('Formato de respuesta inválido');
       }
       
-      // Asegurarnos de que cada pista tiene el campo 'disponible' procesado correctamente
       const pistasConEstado = pistasData.data.map(pista => ({
         ...pista,
         disponible: pista.disponible === true || pista.disponible === 1
@@ -158,7 +157,7 @@ export default function AdminPanel({ navigation }) {
       
       setPistas(pistasConEstado); 
       
-      // Cargar reservas (todas las reservas para super_admin)
+      // Cargar reservas
       const reservasResponse = await fetch(RESERVAS_URL, {
         headers: headers
       });
@@ -174,9 +173,15 @@ export default function AdminPanel({ navigation }) {
         throw new Error('Formato de respuesta inválido para reservas');
       }
       
-      setReservas(reservasData.data);
+      // Enriquecer reservas con información de polideportivo
+      const reservasEnriquecidas = reservasData.data.map(reserva => ({
+        ...reserva,
+        polideportivo_nombre: obtenerNombrePolideportivo(reserva.polideportivo_id)
+      }));
       
-      // Cargar usuarios (solo super_admin puede ver todos) - USAR ENDPOINT ESPECIAL
+      setReservas(reservasEnriquecidas);
+      
+      // Cargar usuarios
       try {
         const usuariosResponse = await fetch(`${USUARIOS_URL}/con-poli`, {
           headers: headers
@@ -188,7 +193,6 @@ export default function AdminPanel({ navigation }) {
             setUsuarios(usuariosData.data);
           }
         } else {
-          // Intentar con el endpoint normal
           const usuariosResponseNormal = await fetch(USUARIOS_URL, {
             headers: headers
           });
@@ -261,13 +265,105 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== FUNCIONES CORREGIDAS PARA GESTIÓN DE PISTAS ==========
+  // Obtener nombre del polideportivo
+  const obtenerNombrePolideportivo = (polideportivoId) => {
+    const polideportivo = polideportivos.find(p => p.id === polideportivoId);
+    return polideportivo ? polideportivo.nombre : 'Desconocido';
+  };
 
-  // ✅ CORREGIDA: Función para cambiar estado de disponibilidad
+  // ========== FUNCIÓN PARA ELIMINAR POLIDEPORTIVO - CON DIAGNÓSTICO ==========
+  const eliminarPolideportivo = async (id) => {
+    if (!token) {
+      alert('No estás autenticado. Por favor, inicia sesión.');
+      return;
+    }
+
+    const polideportivo = polideportivos.find(p => p.id === id);
+    if (!polideportivo) return;
+    
+    // Verificar pistas asociadas localmente
+    const pistasAsociadas = pistas.filter(pista => pista.polideportivo_id === id);
+    if (pistasAsociadas.length > 0) {
+      const nombresPistas = pistasAsociadas.map(p => `"${p.nombre}"`).join(', ');
+      alert(`❌ No se puede eliminar: Este polideportivo tiene ${pistasAsociadas.length} pista(s) asociada(s).\n\nPistas: ${nombresPistas}\n\nElimina primero todas las pistas antes de eliminar el polideportivo.`);
+      return;
+    }
+    
+    const confirmar = window.confirm(
+      `¿Estás seguro de que deseas eliminar el polideportivo "${polideportivo.nombre}"?\n\n📍 Dirección: ${polideportivo.direccion}\n\n⚠️ Esta acción no se puede deshacer.`
+    );
+    
+    if (!confirmar) return;
+    
+    try {
+      console.log(`🔄 Enviando solicitud DELETE para polideportivo ${id}...`);
+      
+      const response = await fetch(`${POLIDEPORTIVOS_URL}/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+
+      console.log(`📊 Respuesta recibida - Status: ${response.status}`);
+      
+      const data = await response.json();
+      console.log(`📋 Datos de respuesta:`, data);
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          alert(`❌ ${data.error || 'No se puede eliminar porque tiene elementos asociados.'}`);
+          return;
+        }
+        
+        if (response.status === 404) {
+          // Si dice que no existe, actualizamos el estado local de todos modos
+          setPolideportivos(prev => prev.filter(p => p.id !== id));
+          alert('⚠️ El polideportivo ya no existe en el servidor. Se ha eliminado del listado local.');
+          return;
+        }
+        
+        throw new Error(data.error || `Error ${response.status}: No se pudo eliminar el polideportivo`);
+      }
+
+      // Si llegamos aquí, la eliminación fue exitosa según el servidor
+      if (data.success) {
+        console.log(`✅ Eliminación exitosa según el servidor`);
+        
+        // Actualizar estado local
+        setPolideportivos(prev => prev.filter(p => p.id !== id));
+        
+        // Recargar datos después de 1 segundo para verificar
+        setTimeout(() => {
+          fetchData();
+        }, 1000);
+        
+        // Actualizar filtro si es necesario
+        if (filtroPolideportivo === id.toString()) {
+          setFiltroPolideportivo('todos');
+        }
+        
+        alert(`✅ Polideportivo "${polideportivo.nombre}" eliminado correctamente`);
+      } else {
+        console.error('❌ Respuesta del servidor indica éxito false:', data);
+        alert(`⚠️ No se pudo eliminar el polideportivo: ${data.error || 'Error desconocido'}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error en la solicitud DELETE:', error);
+      
+      if (error.message.includes('Failed to fetch')) {
+        alert('❌ Error de conexión. Verifica tu conexión a internet e intenta nuevamente.');
+      } else if (error.message.includes('NetworkError')) {
+        alert('❌ Error de red. Por favor, intenta nuevamente.');
+      } else {
+        alert(`❌ Error: ${error.message || 'No se pudo eliminar el polideportivo'}`);
+      }
+    }
+  };
+
+  // ========== FUNCIONES PARA PISTAS ==========
   const toggleMantenimiento = async (pista) => {
     if (!pista || !token) return;
     
-    // Calcular el nuevo estado: invertir el estado actual
     const nuevoDisponible = !pista.disponible;
     
     const confirmar = window.confirm(
@@ -279,12 +375,6 @@ export default function AdminPanel({ navigation }) {
     if (!confirmar) return;
     
     try {
-      console.log(`🛠️ Cambiando estado de pista ${pista.id}:`, {
-        actual: pista.disponible,
-        nuevo: nuevoDisponible
-      });
-
-      // ✅ ENVIAR DIRECTAMENTE EL CAMPO 'disponible' a la nueva ruta PUT /api/pistas/:id
       const response = await fetch(`${PISTAS_URL}/${pista.id}`, {
         method: 'PUT',
         headers: getHeaders(),
@@ -296,52 +386,26 @@ export default function AdminPanel({ navigation }) {
       const data = await response.json();
       
       if (!response.ok) {
-        // Manejar específicamente el error PGRST116
-        if (data.error && data.error.includes('PGRST116')) {
-          console.warn('⚠️  Error PGRST116 - Actualización exitosa pero sin datos devueltos');
-          // Forzar actualización del estado local
-          setPistas(prev => prev.map(p => 
-            p.id === pista.id ? { 
-              ...p, 
-              disponible: nuevoDisponible
-            } : p
-          ));
-          alert(`✅ Pista ${nuevoDisponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
-          return;
-        }
         throw new Error(data.error || 'Error al cambiar estado de disponibilidad');
       }
       
       if (data.success && data.data) {
-        const actualizado = data.data;
         setPistas(prev => prev.map(p => 
           p.id === pista.id ? { 
             ...p, 
-            disponible: actualizado.disponible === true || actualizado.disponible === 1
+            disponible: data.data.disponible === true || data.data.disponible === 1
           } : p
         ));
         
-        alert(`✅ Pista ${actualizado.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+        alert(`✅ Pista ${data.data.disponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
       }
       
     } catch (error) {
       console.error('Error cambiando disponibilidad:', error);
-      
-      if (error.message.includes('403')) {
-        alert('❌ Error: No tienes permisos para modificar esta pista');
-      } else if (error.message.includes('404')) {
-        alert('❌ Error: Pista no encontrada');
-      } else if (error.message.includes('401')) {
-        alert('❌ Error: Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-        logout();
-        window.location.href = '/login';
-      } else {
-        alert(`❌ Error: ${error.message}`);
-      }
+      alert(`❌ Error: ${error.message}`);
     }
   };
 
-  // ✅ FUNCIÓN PARA ELIMINAR PISTA
   const eliminarPista = async (pista) => {
     const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la pista "${pista.nombre}"?\n\nEsta acción no se puede deshacer.`);
     if (!confirmar) return;
@@ -356,15 +420,7 @@ export default function AdminPanel({ navigation }) {
 
       if (!response.ok) {
         if (response.status === 409) {
-          if (data.detalles && data.detalles.reservas) {
-            const reservasInfo = data.detalles.reservas
-              .map(r => `- ${r.nombre_usuario || 'Usuario'} (${r.fecha} ${r.hora_inicio}) - ${r.estado}`)
-              .join('\n');
-            
-            alert(`❌ No se puede eliminar la pista porque tiene ${data.detalles.total_reservas} reserva(s) activa(s):\n\n${reservasInfo}\n\nCancela primero las reservas o espera a que pasen.`);
-          } else {
-            alert(`❌ No se puede eliminar la pista porque tiene reservas activas.\n\n${data.error || 'Cancela primero las reservas o espera a que pasen.'}`);
-          }
+          alert(`❌ ${data.error || 'No se puede eliminar la pista porque tiene reservas activas'}`);
           return;
         }
         
@@ -382,7 +438,6 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // AGREGAR NUEVA PISTA
   const agregarPista = async () => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
@@ -408,7 +463,7 @@ export default function AdminPanel({ navigation }) {
         tipo: nuevoTipo,
         precio: precioNumerico,
         polideportivo_id: parseInt(nuevoPolideportivo),
-        disponible: true  // Nueva pista siempre disponible
+        disponible: true
       };
 
       if (nuevaDescripcion.trim()) {
@@ -454,7 +509,6 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ABRIR MODAL PARA EDITAR PISTA COMPLETA
   const abrirModalEditarPista = (pista) => {
     setPistaEditando(pista);
     setEditarNombrePista(pista.nombre || '');
@@ -465,7 +519,6 @@ export default function AdminPanel({ navigation }) {
     setModalPistaEdicionVisible(true);
   };
 
-  // GUARDAR CAMBIOS DE PISTA - USA LA NUEVA RUTA PUT /api/pistas/:id
   const guardarCambiosPista = async () => {
     if (!pistaEditando || !token) return;
     
@@ -494,7 +547,6 @@ export default function AdminPanel({ navigation }) {
           tipo: editarTipoPista,
           precio: precioNum,
           descripcion: editarDescripcionPista.trim() || null,
-          // Mantener el estado disponible actual
           disponible: pistaEditando.disponible
         })
       });
@@ -534,7 +586,6 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== FUNCIONES PARA GESTIÓN DE PRECIO ==========
   const abrirModalEditarPrecio = (pista) => {
     setPistaEditando(pista);
     setPrecioEditando(pista.precio.toString());
@@ -554,7 +605,6 @@ export default function AdminPanel({ navigation }) {
     }
 
     try {
-      // Usar la nueva ruta PUT /api/pistas/:id para cambiar solo el precio
       const response = await fetch(`${PISTAS_URL}/${pistaEditando.id}`, {
         method: 'PUT',
         headers: getHeaders(),
@@ -586,8 +636,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== FUNCIONES PARA GESTIÓN DE POLIDEPORTIVOS ==========
-
+  // ========== FUNCIONES PARA POLIDEPORTIVOS ==========
   const agregarPolideportivo = async () => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
@@ -629,43 +678,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  const eliminarPolideportivo = async (id) => {
-    if (!token) {
-      alert('No estás autenticado. Por favor, inicia sesión.');
-      return;
-    }
-
-    const pistasAsociadas = pistas.filter(pista => pista.polideportivo_id === id);
-    
-    if (pistasAsociadas.length > 0) {
-      alert(`❌ No se puede eliminar: Este polideportivo tiene ${pistasAsociadas.length} pista(s) asociada(s). Elimina primero todas las pistas antes de eliminar el polideportivo.`);
-      return;
-    }
-
-    const confirmar = window.confirm('¿Estás seguro de que deseas eliminar este polideportivo?');
-    if (!confirmar) return;
-    
-    try {
-      const response = await fetch(`${POLIDEPORTIVOS_URL}/${id}`, {
-        method: 'DELETE',
-        headers: getHeaders(),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar el polideportivo');
-      }
-
-      setPolideportivos((prevPolideportivos) => prevPolideportivos.filter((polideportivo) => polideportivo.id !== id));
-      alert('✅ Polideportivo eliminado correctamente');
-    } catch (error) {
-      console.error('Error al eliminar polideportivo:', error);
-      alert('❌ Error: ' + (error.message || 'No se pudo eliminar el polideportivo'));
-    }
-  };
-
-  // ========== FUNCIONES PARA GESTIÓN DE RESERVAS ==========
-
+  // ========== FUNCIONES PARA RESERVAS ==========
   const cancelarReserva = async (id) => {
     const confirmar = window.confirm('¿Estás seguro de que deseas cancelar esta reserva?');
     if (!confirmar) return;
@@ -688,7 +701,26 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== FUNCIONES PARA GESTIÓN DE USUARIOS ==========
+  // ========== FUNCIONES PARA USUARIOS ==========
+  const obtenerNombreRol = (rol) => {
+    switch(rol) {
+      case 'super_admin':
+        return 'Super Administrador';
+      case 'admin_poli':
+        return 'Administrador de Polideportivo';
+      case 'usuario':
+        return 'Usuario Normal';
+      default:
+        return rol;
+    }
+  };
+
+  const obtenerPolideportivoUsuario = (usuario) => {
+    if (usuario.polideportivo_id) {
+      return obtenerNombrePolideportivo(usuario.polideportivo_id);
+    }
+    return 'No asignado';
+  };
 
   const abrirModalCambioRol = (usuario, accion, polideportivoId = null) => {
     setUsuarioEditando(usuario);
@@ -782,60 +814,46 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== FUNCIONES AUXILIARES ==========
-
-  const obtenerNombrePolideportivo = (polideportivoId) => {
-    const polideportivo = polideportivos.find(p => p.id === polideportivoId);
-    return polideportivo ? polideportivo.nombre : 'Desconocido';
-  };
-
-  const obtenerPolideportivoUsuario = (usuario) => {
-    if (usuario.polideportivo_id) {
-      return obtenerNombrePolideportivo(usuario.polideportivo_id);
-    }
-    return 'No asignado';
-  };
-
-  const obtenerNombreRol = (rol) => {
-    switch(rol) {
-      case 'super_admin':
-        return '👑 Super Admin';
-      case 'admin_poli':
-        return '🏢 Admin Poli';
-      case 'usuario':
-        return '👤 Usuario';
-      default:
-        return rol;
-    }
-  };
-
   // ========== RENDERIZADO DE COMPONENTES ==========
+  const renderPolideportivoItem = (item) => {
+    const pistasEnPolideportivo = pistas.filter(p => p.polideportivo_id === item.id);
+    const tienePistas = pistasEnPolideportivo.length > 0;
+    
+    return (
+      <div className="polideportivo-card">
+        <div className="polideportivo-header">
+          <div className="polideportivo-info">
+            <div className="polideportivo-nombre">🏟️ {item.nombre}</div>
+            <div className="polideportivo-direccion">📍 {item.direccion}</div>
+            {item.telefono && (
+              <div className="polideportivo-telefono">📞 Tel: {item.telefono}</div>
+            )}
+          </div>
+          <div className="pistas-count-container">
+            <span className={`pistas-count ${tienePistas ? 'pistas-count-warning' : 'pistas-count-ok'}`}>
+              {pistasEnPolideportivo.length} {pistasEnPolideportivo.length === 1 ? 'pista' : 'pistas'}
+            </span>
+          </div>
+        </div>
 
-  const renderPolideportivoItem = (item) => (
-    <div className="polideportivo-card">
-      <div className="polideportivo-header">
-        <div className="polideportivo-info">
-          <div className="polideportivo-nombre">🏟️ {item.nombre}</div>
-          <div className="polideportivo-direccion">📍 {item.direccion}</div>
-          {item.telefono && (
-            <div className="polideportivo-telefono">📞 Tel: {item.telefono}</div>
+        <div className="polideportivo-actions">
+          {tienePistas ? (
+            <div className="warning-message">
+              ⚠️ Para eliminar este polideportivo, primero debes eliminar sus {pistasEnPolideportivo.length} pista(s)
+            </div>
+          ) : (
+            <button
+              className="boton-accion boton-eliminar"
+              onClick={() => eliminarPolideportivo(item.id)}
+              title={`Eliminar "${item.nombre}"`}
+            >
+              🗑️ Eliminar Polideportivo
+            </button>
           )}
         </div>
-        <div className="pistas-count-container">
-          <span className="pistas-count">
-            {pistas.filter(p => p.polideportivo_id === item.id).length} pistas
-          </span>
-        </div>
       </div>
-
-      <button
-        className="boton-accion boton-eliminar"
-        onClick={() => eliminarPolideportivo(item.id)}
-      >
-        🗑️ Eliminar
-      </button>
-    </div>
-  );
+    );
+  };
 
   const renderPistaItem = (item) => {
     return (
@@ -928,6 +946,7 @@ export default function AdminPanel({ navigation }) {
       
       <div className="reserva-info">
         <div className="reserva-texto">👤 Usuario: {item.nombre_usuario || 'Desconocido'}</div>
+        <div className="reserva-texto">🏟️ Polideportivo: {item.polideportivo_nombre || obtenerNombrePolideportivo(item.polideportivo_id)}</div>
         <div className="reserva-texto">📅 Fecha: {new Date(item.fecha).toLocaleDateString('es-ES')}</div>
         <div className="reserva-texto">⏰ Hora: {item.hora_inicio} - {item.hora_fin}</div>
         <div className="reserva-texto">
@@ -958,7 +977,7 @@ export default function AdminPanel({ navigation }) {
     </div>
   );
 
-  // FUNCIÓN PARA RENDERIZAR EL CONTENIDO
+  // ========== RENDER CONTENT ==========
   const renderContent = () => {
     switch (activeTab) {
       case 'polideportivos':
@@ -1129,7 +1148,6 @@ export default function AdminPanel({ navigation }) {
                       <th>Nombre</th>
                       <th>Usuario</th>
                       <th>Email</th>
-                      <th>DNI</th>
                       <th>Teléfono</th>
                       <th>Fecha Registro</th>
                       <th>Rol</th>
@@ -1143,7 +1161,6 @@ export default function AdminPanel({ navigation }) {
                         <td>{usuario.nombre}</td>
                         <td>{usuario.usuario}</td>
                         <td>{usuario.correo}</td>
-                        <td>{usuario.dni}</td>
                         <td>{usuario.telefono || 'No'}</td>
                         <td>
                           {usuario.fecha_creacion 
@@ -1152,7 +1169,7 @@ export default function AdminPanel({ navigation }) {
                           }
                         </td>
                         <td>
-                          <span className={`rol-badge ${usuario.rol === 'super_admin' ? 'rol-admin' : 
+                          <span className={`rol-text ${usuario.rol === 'super_admin' ? 'rol-super-admin' : 
                                             usuario.rol === 'admin_poli' ? 'rol-admin-poli' : 'rol-user'}`}>
                             {obtenerNombreRol(usuario.rol)}
                           </span>
@@ -1175,14 +1192,14 @@ export default function AdminPanel({ navigation }) {
                                   onClick={() => abrirModalCambioRol(usuario, 'admin_global')}
                                   title="Hacer Super Administrador"
                                 >
-                                  👑 Super Admin
+                                  Super Admin
                                 </button>
                                 <button
                                   className="boton-accion boton-admin-poli"
                                   onClick={() => abrirModalCambioRol(usuario, 'admin_poli')}
                                   title="Hacer Administrador de Polideportivo"
                                 >
-                                  🏢 Admin Poli
+                                  Admin Poli
                                 </button>
                               </>
                             ) : usuario.rol === 'admin_poli' ? (
@@ -1192,7 +1209,7 @@ export default function AdminPanel({ navigation }) {
                                   onClick={() => abrirModalCambioRol(usuario, 'admin_global')}
                                   title="Hacer Super Administrador"
                                 >
-                                  👑 Super Admin
+                                  Super Admin
                                 </button>
                                 <button
                                   className="boton-accion boton-quitar-admin"
@@ -1200,7 +1217,7 @@ export default function AdminPanel({ navigation }) {
                                   disabled={usuario.id === user?.id}
                                   title={usuario.id === user?.id ? "No puedes quitarte a ti mismo los privilegios" : "Quitar administrador de polideportivo"}
                                 >
-                                  👤 Quitar Admin
+                                  Quitar Admin
                                 </button>
                               </>
                             ) : usuario.rol === 'super_admin' ? (
@@ -1210,7 +1227,7 @@ export default function AdminPanel({ navigation }) {
                                 disabled={usuario.id === user?.id}
                                 title={usuario.id === user?.id ? "No puedes quitarte a ti mismo los privilegios" : "Quitar super administrador"}
                               >
-                                👤 Quitar Super Admin
+                                Quitar Super Admin
                               </button>
                             ) : null}
                           </div>
@@ -1229,6 +1246,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
+  // ========== RENDER PRINCIPAL ==========
   if (userRole !== 'super_admin') {
     return (
       <div className="error-container">
@@ -1562,11 +1580,11 @@ export default function AdminPanel({ navigation }) {
             
             <div className="modal-rol-info">
               <strong>Cambiando a:</strong> 
-              <span className={`rol-badge ${accionSeleccionada === 'admin_global' ? 'rol-admin' : 
+              <span className={`rol-text ${accionSeleccionada === 'admin_global' ? 'rol-super-admin' : 
                                   accionSeleccionada === 'admin_poli' ? 'rol-admin-poli' : 'rol-user'}`}>
-                {accionSeleccionada === 'admin_global' ? '👑 Super Administrador' : 
-                 accionSeleccionada === 'admin_poli' ? '🏢 Administrador de Polideportivo' : 
-                 '👤 Usuario Normal'}
+                {accionSeleccionada === 'admin_global' ? 'Super Administrador' : 
+                 accionSeleccionada === 'admin_poli' ? 'Administrador de Polideportivo' : 
+                 'Usuario Normal'}
               </span>
             </div>
 
