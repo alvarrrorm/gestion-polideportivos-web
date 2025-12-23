@@ -290,7 +290,6 @@ export default function AdminPanel({ navigation }) {
         headers: getHeaders(),
         body: JSON.stringify({
           disponible: nuevoDisponible
-          // Nota: No enviamos enMantenimiento, solo el campo disponible
         }),
       });
       
