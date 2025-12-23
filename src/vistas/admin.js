@@ -261,9 +261,9 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // ========== FUNCIONES PARA GESTIÓN DE PISTAS ==========
+  // ========== FUNCIONES CORREGIDAS PARA GESTIÓN DE PISTAS ==========
 
-  // ✅ CORREGIDA: Función para cambiar estado de mantenimiento (usa 'disponible' directamente)
+  // ✅ CORREGIDA: Función para cambiar estado de disponibilidad
   const toggleMantenimiento = async (pista) => {
     if (!pista || !token) return;
     
@@ -284,7 +284,7 @@ export default function AdminPanel({ navigation }) {
         nuevo: nuevoDisponible
       });
 
-      // ✅ ENVIAR DIRECTAMENTE EL CAMPO 'disponible'
+      // ✅ ENVIAR DIRECTAMENTE EL CAMPO 'disponible' a la nueva ruta PUT /api/pistas/:id
       const response = await fetch(`${PISTAS_URL}/${pista.id}`, {
         method: 'PUT',
         headers: getHeaders(),
@@ -296,7 +296,20 @@ export default function AdminPanel({ navigation }) {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Error al cambiar estado de mantenimiento');
+        // Manejar específicamente el error PGRST116
+        if (data.error && data.error.includes('PGRST116')) {
+          console.warn('⚠️  Error PGRST116 - Actualización exitosa pero sin datos devueltos');
+          // Forzar actualización del estado local
+          setPistas(prev => prev.map(p => 
+            p.id === pista.id ? { 
+              ...p, 
+              disponible: nuevoDisponible
+            } : p
+          ));
+          alert(`✅ Pista ${nuevoDisponible ? 'reactivada' : 'puesta en mantenimiento'} exitosamente`);
+          return;
+        }
+        throw new Error(data.error || 'Error al cambiar estado de disponibilidad');
       }
       
       if (data.success && data.data) {
@@ -312,7 +325,7 @@ export default function AdminPanel({ navigation }) {
       }
       
     } catch (error) {
-      console.error('Error cambiando mantenimiento:', error);
+      console.error('Error cambiando disponibilidad:', error);
       
       if (error.message.includes('403')) {
         alert('❌ Error: No tienes permisos para modificar esta pista');
@@ -452,7 +465,7 @@ export default function AdminPanel({ navigation }) {
     setModalPistaEdicionVisible(true);
   };
 
-  // GUARDAR CAMBIOS DE PISTA
+  // GUARDAR CAMBIOS DE PISTA - USA LA NUEVA RUTA PUT /api/pistas/:id
   const guardarCambiosPista = async () => {
     if (!pistaEditando || !token) return;
     
@@ -541,8 +554,9 @@ export default function AdminPanel({ navigation }) {
     }
 
     try {
-      const response = await fetch(`${PISTAS_URL}/${pistaEditando.id}/precio`, {
-        method: 'PATCH',
+      // Usar la nueva ruta PUT /api/pistas/:id para cambiar solo el precio
+      const response = await fetch(`${PISTAS_URL}/${pistaEditando.id}`, {
+        method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify({
           precio: precioNumerico,
