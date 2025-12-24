@@ -10,13 +10,14 @@ export default function Register() {
     telefono: '',
     pass: '',
     pass_2: ''
-    // SIN clave_admin - ELIMINADO
   });
   const [mensajeError, setMensajeError] = useState('');
   const [aceptoPoliticas, setAceptoPoliticas] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [screenSize, setScreenSize] = useState('medium');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Referencias
   const correoRef = useRef();
@@ -25,7 +26,6 @@ export default function Register() {
   const telefonoRef = useRef();
   const passRef = useRef();
   const pass2Ref = useRef();
-  // SIN claveAdminRef - ELIMINADO
 
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function Register() {
     }
   };
 
-  // Manejar el registro del usuario - CORREGIDO
+  // Manejar el registro del usuario
   const handleRegister = async () => {
     setCargando(true);
     setMensajeError('');
@@ -125,7 +125,6 @@ export default function Register() {
           pass,
           pass_2,  
           telefono
-          // SIN clave_admin - ELIMINADO
         })
       });
 
@@ -144,9 +143,10 @@ export default function Register() {
           telefono: '',
           pass: '',
           pass_2: ''
-          // SIN clave_admin - ELIMINADO
         });
         setAceptoPoliticas(false);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
         
         // Navegar al login
         window.location.href = '/login';
@@ -168,6 +168,15 @@ export default function Register() {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+  };
+
+  // Toggle mostrar/ocultar contraseña
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleShowConfirmPassword = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   // Colores para modo oscuro
@@ -349,41 +358,67 @@ export default function Register() {
               maxLength="15"
             />
 
-            <input
-              ref={passRef}
-              type="password"
-              placeholder="Contraseña"
-              className={`input input-${screenSize}`}
-              style={{ 
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
-                color: colors.text
-              }}
-              value={formData.pass}
-              onChange={(e) => handleInputChange('pass', e.target.value)}
-              onKeyPress={(e) => handleKeyPress(e, pass2Ref)}
-              disabled={cargando}
-              autoComplete="new-password"
-              required
-            />
+            {/* Contraseña con botón ojo */}
+            <div className="password-input-container">
+              <input
+                ref={passRef}
+                type={showPassword ? "text" : "password"}
+                placeholder="Contraseña"
+                className={`input input-${screenSize} password-input`}
+                style={{ 
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  paddingRight: '45px'
+                }}
+                value={formData.pass}
+                onChange={(e) => handleInputChange('pass', e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, pass2Ref)}
+                disabled={cargando}
+                autoComplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle-button"
+                onClick={toggleShowPassword}
+                disabled={cargando}
+                style={{ color: colors.textMuted }}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
             
-            <input
-              ref={pass2Ref}
-              type="password"
-              placeholder="Repetir contraseña"
-              className={`input input-${screenSize}`}
-              style={{ 
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
-                color: colors.text
-              }}
-              value={formData.pass_2}
-              onChange={(e) => handleInputChange('pass_2', e.target.value)}
-              onKeyPress={(e) => handleKeyPress(e, null)}  // CAMBIADO: ahora Enter envía
-              disabled={cargando}
-              autoComplete="new-password"
-              required
-            />
+            {/* Confirmar Contraseña con botón ojo */}
+            <div className="password-input-container">
+              <input
+                ref={pass2Ref}
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Repetir contraseña"
+                className={`input input-${screenSize} password-input`}
+                style={{ 
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  paddingRight: '45px'
+                }}
+                value={formData.pass_2}
+                onChange={(e) => handleInputChange('pass_2', e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, null)}
+                disabled={cargando}
+                autoComplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle-button"
+                onClick={toggleShowConfirmPassword}
+                disabled={cargando}
+                style={{ color: colors.textMuted }}
+              >
+                {showConfirmPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
 
             <div className="checkbox-container">
               <button
