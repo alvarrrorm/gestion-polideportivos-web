@@ -464,43 +464,7 @@ export default function Login() {
             </>
           )}
 
-          {/* Información de debug */}
-          {process.env.NODE_ENV !== 'production' && (
-            <div 
-              className="debug-info"
-              style={{
-                marginTop: '20px',
-                padding: '12px',
-                backgroundColor: colors.surface,
-                border: `1px solid ${colors.border}`,
-                borderRadius: '8px',
-                fontSize: '11px',
-                color: colors.textSecondary
-              }}
-            >
-              <div style={{ fontWeight: 'bold', color: colors.primary, marginBottom: '6px' }}>
-                🔧 Información del Sistema
-              </div>
-              <div><strong>Endpoint usado:</strong> 
-                <div style={{ marginLeft: '10px', fontFamily: 'monospace' }}>
-                  <code>POST /api/login</code>
-                </div>
-              </div>
-              <div style={{ marginTop: '6px' }}>
-                <strong>Estado:</strong> {isAuthenticated ? '✅ Autenticado' : '❌ No autenticado'}
-              </div>
-              {user && (
-                <>
-                  <div><strong>Usuario:</strong> {user.usuario}</div>
-                  <div><strong>Rol:</strong> {user.rol}</div>
-                  <div><strong>Polideportivo:</strong> {user.polideportivo_id || 'Ninguno'}</div>
-                </>
-              )}
-              <div style={{ marginTop: '8px', fontSize: '10px', color: colors.textMuted }}>
-                <strong>Nota:</strong> Usando endpoint /api/login con campo "pass"
-              </div>
-            </div>
-          )}
+         
         </div>
       </div>
     </div>
