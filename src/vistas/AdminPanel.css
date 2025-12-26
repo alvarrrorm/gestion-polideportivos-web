@@ -2785,3 +2785,94 @@ body {
   border-radius: 4px;
   border-left: 3px solid #3498db;
 }
+
+/* Estilos para los filtros en reservas */
+.filtro-container {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.filtro-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.filtro-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.filtro-boton {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+}
+
+.filtro-boton:hover {
+  background-color: #f0f0f0;
+  border-color: #bbb;
+}
+
+.filtro-boton-activo {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.filtro-boton-activo:hover {
+  background-color: #0056b3;
+}
+
+/* Mejoras para las secciones de contenido */
+.seccion-titulo {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lista-vacia-container {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 2px dashed #ddd;
+  margin: 20px 0;
+}
+
+.lista-vacia {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.lista-vacia-subtexto {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 20px;
+}
+
+/* Responsive para los filtros */
+@media (max-width: 768px) {
+  .filtro-botones {
+    overflow-x: auto;
+    padding-bottom: 5px;
+  }
+  
+  .filtro-boton {
+    flex-shrink: 0;
+  }
+}

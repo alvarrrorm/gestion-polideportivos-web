@@ -184,11 +184,11 @@ export default function Reservas() {
     navigate(`/resumen-reserva?reserva=${encodeURIComponent(JSON.stringify(reserva))}`);
   };
 
-  // 👇 FUNCIÓN MEJORADA PARA CANCELAR RESERVAS - CORREGIDA
+  // 👇 FUNCIÓN COMPLETAMENTE CORREGIDA PARA CANCELAR RESERVAS
   const handleCancelar = async (reservaId, e) => {
     e.stopPropagation();
     
-    if (!window.confirm('¿Estás seguro de que quieres cancelar esta reserva?')) {
+    if (!window.confirm('¿Estás seguro de que quieres cancelar esta reserva?\n\nUna vez cancelada, no podrás recuperarla.')) {
       return;
     }
 
@@ -213,17 +213,41 @@ export default function Reservas() {
 
       alert('✅ Reserva cancelada correctamente');
       
-      // Actualizar la lista de reservas localmente
-      setReservasActivas(prev => prev.filter(r => r.id !== reservaId));
-      setReservasConfirmadas(prev => prev.filter(r => r.id !== reservaId));
+      // ✅ ACTUALIZAR TODAS LAS LISTAS CORRECTAMENTE
+      const ahora = new Date();
       
-      // Agregar al historial
-      const reservaCancelada = [...reservasActivas, ...reservasConfirmadas].find(r => r.id === reservaId);
+      // 1. Buscar la reserva en todas las listas
+      const reservaCancelada = 
+        [...reservasActivas, ...reservasConfirmadas].find(r => r.id === reservaId);
+      
       if (reservaCancelada) {
-        setReservasHistorial(prev => [{
+        // 2. Crear la versión cancelada de la reserva
+        const reservaConEstadoCancelado = {
           ...reservaCancelada,
-          estado: 'cancelada'
-        }, ...prev]);
+          estado: 'cancelada',
+          // Asegurarnos de que tiene todos los campos necesarios
+          polideportivo_nombre: reservaCancelada.polideportivo_nombre || `Polideportivo ${reservaCancelada.polideportivo_id}`,
+          pistaNombre: reservaCancelada.pistaNombre || `Pista ${reservaCancelada.pista_id}`,
+          pistaTipo: reservaCancelada.pistaTipo || 'Sin especificar'
+        };
+        
+        // 3. Actualizar estado local - COMPLETAMENTE ACTUALIZADO
+        // a) Quitar de reservas activas si está allí
+        setReservasActivas(prev => prev.filter(r => r.id !== reservaId));
+        
+        // b) Quitar de reservas confirmadas si está allí
+        setReservasConfirmadas(prev => prev.filter(r => r.id !== reservaId));
+        
+        // c) Agregar al historial (al inicio)
+        setReservasHistorial(prev => [reservaConEstadoCancelado, ...prev]);
+        
+        console.log(`🔄 Reserva ${reservaId} movida al historial como cancelada`);
+      } else {
+        console.log(`⚠️ No se encontró la reserva ${reservaId} en las listas activas`);
+        // Si no la encontramos, recargamos los datos para estar seguros
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       }
 
     } catch (error) {
