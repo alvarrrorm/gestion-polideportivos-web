@@ -23,7 +23,6 @@ export default function Reservas() {
 
   // Obtener datos del usuario
   const usuario = user?.usuario || '';
-  const dni = user?.dni || '';
   const userId = user?.id || 0;
   const token = localStorage.getItem('auth_token');
 
@@ -32,7 +31,7 @@ export default function Reservas() {
     navigate('/reservas');
   };
 
-  // Función para obtener headers con autenticación
+  // Función para obtener headers con autenticación - MEJORADA
   const getHeaders = () => {
     const headers = {
       'Content-Type': 'application/json',
@@ -40,10 +39,299 @@ export default function Reservas() {
     
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔑 Token incluido en headers');
+    } else {
+      console.warn('⚠️ No hay token disponible');
     }
     
     return headers;
   };
+
+  // 👇 FUNCIÓN AUXILIAR PARA ACTUALIZAR LISTAS DESPUÉS DE CANCELAR
+  const actualizarListasDespuesDeCancelar = (reservaId, esAutomatica = false) => {
+    // Buscar la reserva en activas
+    let reservaEncontrada = reservasActivas.find(r => r.id === reservaId);
+    let origen = 'activas';
+    
+    // Si no está en activas, buscar en confirmadas
+    if (!reservaEncontrada) {
+      reservaEncontrada = reservasConfirmadas.find(r => r.id === reservaId);
+      origen = 'confirmadas';
+    }
+    
+    // Si tampoco está en confirmadas, buscar en historial
+    if (!reservaEncontrada) {
+      reservaEncontrada = reservasHistorial.find(r => r.id === reservaId);
+      origen = 'historial';
+    }
+    
+    if (reservaEncontrada) {
+      // Crear versión cancelada
+      const reservaCancelada = {
+        ...reservaEncontrada,
+        estado: 'cancelada',
+        motivo_cancelacion: esAutomatica ? 'Tiempo expirado (más de 1 hora pendiente)' : 'Cancelada por el usuario'
+      };
+      
+      // Actualizar listas
+      if (origen === 'activas') {
+        setReservasActivas(prev => prev.filter(r => r.id !== reservaId));
+      } else if (origen === 'confirmadas') {
+        setReservasConfirmadas(prev => prev.filter(r => r.id !== reservaId));
+      } else {
+        setReservasHistorial(prev => prev.filter(r => r.id !== reservaId));
+      }
+      
+      // Agregar al historial
+      setReservasHistorial(prev => [reservaCancelada, ...prev]);
+      
+      console.log(`📝 Reserva ${reservaId} movida al historial (${esAutomatica ? 'cancelación automática' : 'cancelación manual'})`);
+    } else {
+      console.warn(`⚠️ Reserva ${reservaId} no encontrada en ninguna lista`);
+    }
+  };
+
+  // 👇 FUNCIÓN MEJORADA PARA CANCELAR RESERVAS (PENDIENTES Y CONFIRMADAS)
+  const handleCancelar = async (reservaId, e) => {
+    e.stopPropagation();
+    
+    // Obtener información de la reserva para mostrar en el mensaje
+    const todasReservas = [...reservasActivas, ...reservasConfirmadas, ...reservasHistorial];
+    const reserva = todasReservas.find(r => r.id === reservaId);
+    
+    if (!reserva) {
+      alert('❌ No se encontró la reserva');
+      return;
+    }
+    
+    const mensajeConfirmacion = reserva.estado === 'confirmada' 
+      ? `¿Estás seguro de que quieres cancelar esta reserva CONFIRMADA?\n\nDetalles:\n• ${reserva.pistaNombre || 'Pista'} - ${reserva.fecha} ${reserva.hora_inicio}\n• Precio: €${parseFloat(reserva.precio || 0).toFixed(2)}\n\n⚠️ Esta acción no se puede deshacer.`
+      : `¿Estás seguro de que quieres cancelar esta reserva PENDIENTE?\n\nEsta acción no se puede deshacer.`;
+    
+    if (!window.confirm(mensajeConfirmacion)) {
+      return;
+    }
+
+    setCancelando(prev => ({ ...prev, [reservaId]: true }));
+
+    try {
+      console.log(`❌ Intentando cancelar reserva ID: ${reservaId}, Estado actual: ${reserva.estado}`);
+      
+      const response = await fetch(`https://tfgv2-production.up.railway.app/api/reservas/${reservaId}/cancelar`, {
+        method: 'PUT',
+        headers: getHeaders()
+      });
+
+      const data = await response.json();
+      
+      console.log('📊 Respuesta de cancelación:', data);
+
+      if (!response.ok || !data.success) {
+        // Verificar si ya está cancelada
+        if (data.error && (data.error.includes('ya no está pendiente') || data.error.includes('cancelada'))) {
+          if (reserva.estado === 'cancelada') {
+            alert('⚠️ Esta reserva ya estaba cancelada.');
+          } else {
+            alert('⚠️ Esta reserva ya no se puede cancelar (posiblemente ya fue procesada).');
+          }
+          actualizarListasDespuesDeCancelar(reservaId);
+          return;
+        }
+        throw new Error(data.error || 'Error al cancelar la reserva');
+      }
+
+      // Mostrar mensaje diferente según el estado original
+      if (reserva.estado === 'confirmada') {
+        alert(`✅ Reserva confirmada cancelada correctamente.\n\nSe ha liberado el espacio para que otras personas puedan reservar.`);
+      } else {
+        alert('✅ Reserva pendiente cancelada correctamente.');
+      }
+      
+      // Actualizar todas las listas después de cancelar
+      actualizarListasDespuesDeCancelar(reservaId);
+
+    } catch (error) {
+      console.error('Error al cancelar reserva:', error);
+      
+      // Mensaje de error más específico
+      let mensajeError = `❌ Error al cancelar: ${error.message}`;
+      
+      if (error.message.includes('permisos')) {
+        mensajeError += '\n\nNo tienes permisos para cancelar esta reserva.';
+      } else if (error.message.includes('404')) {
+        mensajeError += '\n\nLa reserva no fue encontrada en el sistema.';
+      } else if (error.message.includes('conexión')) {
+        mensajeError += '\n\nPor favor, verifica tu conexión a internet e intenta nuevamente.';
+      }
+      
+      alert(mensajeError);
+    } finally {
+      setCancelando(prev => ({ ...prev, [reservaId]: false }));
+    }
+  };
+
+  // Cargar reservas - VERSIÓN MEJORADA CON MÁS LOGGING
+  useEffect(() => {
+    const fetchReservas = async () => {
+      console.log('🔄 Iniciando carga de reservas...');
+      console.log('👤 Usuario ID:', userId);
+      console.log('🔑 Token disponible:', token ? 'Sí' : 'No');
+
+      if (!token) {
+        console.log('⚠️ No hay token de autenticación');
+        setError('No estás autenticado. Por favor, inicia sesión.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('🔍 Buscando mis reservas para usuario ID:', userId);
+        
+        const endpoint = `https://tfgv2-production.up.railway.app/api/reservas/mis-reservas`;
+        console.log('📡 Endpoint:', endpoint);
+        
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: getHeaders()
+        });
+        
+        console.log('📊 Status de respuesta:', response.status, response.statusText);
+        
+        const data = await response.json();
+        
+        console.log('📦 Datos recibidos del servidor:', data);
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log('❌ Token expirado o inválido');
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            setError('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+            setTimeout(() => navigate('/login'), 2000);
+            return;
+          }
+          throw new Error(data.error || `Error ${response.status}: ${response.statusText}`);
+        }
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Error al obtener reservas');
+        }
+
+        // Procesar reservas recibidas
+        console.log('📋 Datos a procesar:', data.data);
+        processReservas(data.data || []);
+
+      } catch (error) {
+        console.error('❌ Error cargando reservas:', error);
+        setError(error.message || 'Error al cargar las reservas. Por favor, verifica tu conexión.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Función para procesar las reservas - MEJORADA
+    const processReservas = (todasReservas) => {
+      console.log('🔧 Procesando reservas recibidas:', todasReservas.length);
+      
+      // DEBUG: Mostrar todas las reservas recibidas
+      todasReservas.forEach((reserva, index) => {
+        console.log(`📋 Reserva ${index + 1}:`, {
+          id: reserva.id,
+          estado: reserva.estado,
+          fecha: reserva.fecha,
+          hora_inicio: reserva.hora_inicio,
+          pistaNombre: reserva.pistaNombre || reserva.pistas?.nombre,
+          pistaTipo: reserva.pistaTipo || reserva.pistas?.tipo,
+          polideportivo_nombre: reserva.polideportivo_nombre || reserva.polideportivos?.nombre,
+          precio: reserva.precio,
+          usuario_id: reserva.usuario_id
+        });
+      });
+      
+      const ahora = new Date();
+      console.log('⏰ Fecha/hora actual:', ahora.toISOString());
+      
+      // Reservas activas (futuras y no canceladas)
+      const activas = todasReservas.filter(reserva => {
+        try {
+          // Verificar que la reserva tenga fecha y hora
+          if (!reserva.fecha || !reserva.hora_inicio) {
+            console.warn('⚠️ Reserva sin fecha/hora:', reserva.id);
+            return false;
+          }
+          
+          const fechaReserva = new Date(`${reserva.fecha}T${reserva.hora_inicio}:00`);
+          const esFutura = fechaReserva >= ahora;
+          const noCancelada = reserva.estado !== 'cancelada';
+          
+          console.log(`Reserva ${reserva.id}:`, {
+            fechaReserva: fechaReserva.toISOString(),
+            esFutura,
+            estado: reserva.estado,
+            noCancelada,
+            esActiva: esFutura && noCancelada
+          });
+          
+          return esFutura && noCancelada;
+        } catch (e) {
+          console.error('Error procesando reserva activa:', e, reserva);
+          return false;
+        }
+      });
+      
+      console.log('✅ Reservas activas encontradas:', activas.length);
+      setReservasActivas(activas);
+
+      // Reservas confirmadas (específicamente con estado 'confirmada' y futuras)
+      const confirmadas = todasReservas.filter(reserva => {
+        try {
+          const fechaReserva = new Date(`${reserva.fecha}T${reserva.hora_inicio}:00`);
+          return reserva.estado === 'confirmada' && fechaReserva >= ahora;
+        } catch (e) {
+          console.error('Error procesando reserva confirmada:', e, reserva);
+          return false;
+        }
+      });
+      
+      console.log('✅ Reservas confirmadas encontradas:', confirmadas.length);
+      setReservasConfirmadas(confirmadas);
+
+      // Historial (pasadas o canceladas)
+      const historial = todasReservas.filter(reserva => {
+        try {
+          const fechaReserva = new Date(`${reserva.fecha}T${reserva.hora_inicio}:00`);
+          const esPasada = fechaReserva < ahora;
+          const esCancelada = reserva.estado === 'cancelada';
+          
+          return esPasada || esCancelada;
+        } catch (e) {
+          console.error('Error procesando historial:', e, reserva);
+          return false;
+        }
+      });
+      
+      console.log('📜 Reservas en historial:', historial.length);
+      setReservasHistorial(historial);
+      
+      // DEBUG: Resumen final
+      console.log('📊 RESUMEN FINAL:');
+      console.log('   Activas:', activas.length);
+      console.log('   Confirmadas:', confirmadas.length);
+      console.log('   Historial:', historial.length);
+      console.log('   Total procesadas:', todasReservas.length);
+    };
+
+    if (token) {
+      console.log('🚀 Iniciando carga de reservas...');
+      fetchReservas();
+    } else {
+      console.log('⚠️ No hay token disponible');
+      setLoading(false);
+      setError('No estás autenticado. Por favor, inicia sesión.');
+    }
+  }, [userId, token, navigate]);
 
   // 👇 FUNCIÓN PARA CANCELAR RESERVA AUTOMÁTICAMENTE SI LLEVA MÁS DE 1 HORA PENDIENTE
   const verificarCancelacionAutomatica = async () => {
@@ -93,9 +381,9 @@ export default function Reservas() {
           // Actualizar estado localmente
           actualizarListasDespuesDeCancelar(reserva.id, true);
           
-          // Notificar al usuario (opcional)
+          // Notificar al usuario
           if (reservasParaCancelar.length === 1) {
-            console.log('ℹ️ Se ha cancelado automáticamente una reserva pendiente que llevaba más de 1 hora');
+            alert('ℹ️ Se ha cancelado automáticamente una reserva pendiente que llevaba más de 1 hora');
           }
         } else {
           console.warn(`⚠️ No se pudo cancelar automáticamente reserva ${reserva.id}:`, data.error);
@@ -106,241 +394,10 @@ export default function Reservas() {
     }
   };
 
-  // 👇 FUNCIÓN AUXILIAR PARA ACTUALIZAR LISTAS DESPUÉS DE CANCELAR
-  const actualizarListasDespuesDeCancelar = (reservaId, esAutomatica = false) => {
-    // Buscar la reserva en activas
-    let reservaEncontrada = reservasActivas.find(r => r.id === reservaId);
-    let origen = 'activas';
-    
-    // Si no está en activas, buscar en confirmadas
-    if (!reservaEncontrada) {
-      reservaEncontrada = reservasConfirmadas.find(r => r.id === reservaId);
-      origen = 'confirmadas';
-    }
-    
-    // Si tampoco está en confirmadas, buscar en historial
-    if (!reservaEncontrada) {
-      reservaEncontrada = reservasHistorial.find(r => r.id === reservaId);
-      origen = 'historial';
-    }
-    
-    if (reservaEncontrada) {
-      // Crear versión cancelada
-      const reservaCancelada = {
-        ...reservaEncontrada,
-        estado: 'cancelada',
-        motivo_cancelacion: esAutomatica ? 'Tiempo expirado (más de 1 hora pendiente)' : 'Cancelada por el usuario'
-      };
-      
-      // Actualizar listas
-      if (origen === 'activas') {
-        setReservasActivas(prev => prev.filter(r => r.id !== reservaId));
-      } else if (origen === 'confirmadas') {
-        setReservasConfirmadas(prev => prev.filter(r => r.id !== reservaId));
-      } else {
-        setReservasHistorial(prev => prev.filter(r => r.id !== reservaId));
-      }
-      
-      // Agregar al historial
-      setReservasHistorial(prev => [reservaCancelada, ...prev]);
-      
-      if (esAutomatica) {
-        console.log(`📝 Reserva ${reservaId} movida al historial (cancelación automática)`);
-      } else {
-        console.log(`📝 Reserva ${reservaId} movida al historial (cancelación manual)`);
-      }
-    } else {
-      console.warn(`⚠️ Reserva ${reservaId} no encontrada en ninguna lista`);
-    }
-  };
-
-  // 👇 FUNCIÓN MEJORADA PARA CANCELAR RESERVAS (PENDIENTES Y CONFIRMADAS)
-  const handleCancelar = async (reservaId, e) => {
-    e.stopPropagation();
-    
-    // Obtener información de la reserva para mostrar en el mensaje
-    const todasReservas = [...reservasActivas, ...reservasConfirmadas, ...reservasHistorial];
-    const reserva = todasReservas.find(r => r.id === reservaId);
-    
-    if (!reserva) {
-      alert('❌ No se encontró la reserva');
-      return;
-    }
-    
-    const mensajeConfirmacion = reserva.estado === 'confirmada' 
-      ? `¿Estás seguro de que quieres cancelar esta reserva CONFIRMADA?\n\nDetalles:\n• ${reserva.pistaNombre || 'Pista'} - ${reserva.fecha} ${reserva.hora_inicio}\n• Precio: €${parseFloat(reserva.precio || 0).toFixed(2)}\n\n⚠️ Esta acción no se puede deshacer.`
-      : `¿Estás seguro de que quieres cancelar esta reserva PENDIENTE?\n\nEsta acción no se puede deshacer.`;
-    
-    if (!window.confirm(mensajeConfirmacion)) {
-      return;
-    }
-
-    setCancelando(prev => ({ ...prev, [reservaId]: true }));
-
-    try {
-      console.log(`❌ Intentando cancelar reserva ID: ${reservaId}, Estado actual: ${reserva.estado}`);
-      
-      const response = await fetch(`https://tfgv2-production.up.railway.app/api/reservas/${reservaId}/cancelar`, {
-        method: 'PUT',
-        headers: getHeaders()
-      });
-
-      const data = await response.json();
-      
-      console.log('📊 Respuesta de cancelación:', data);
-
-      if (!response.ok || !data.success) {
-        // Verificar si ya está cancelada
-        if (data.error && (data.error.includes('ya no está pendiente') || data.error.includes('cancelada'))) {
-          // Si el backend dice que ya no está pendiente o ya está cancelada
-          if (reserva.estado === 'cancelada') {
-            alert('⚠️ Esta reserva ya estaba cancelada.');
-          } else {
-            alert('⚠️ Esta reserva ya no se puede cancelar (posiblemente ya fue procesada).');
-          }
-          // Actualizar las listas para reflejar el estado actual
-          actualizarListasDespuesDeCancelar(reservaId);
-          return;
-        }
-        throw new Error(data.error || 'Error al cancelar la reserva');
-      }
-
-      // Mostrar mensaje diferente según el estado original
-      if (reserva.estado === 'confirmada') {
-        alert(`✅ Reserva confirmada cancelada correctamente.\n\nSe ha liberado el espacio para que otras personas puedan reservar.`);
-      } else {
-        alert('✅ Reserva pendiente cancelada correctamente.');
-      }
-      
-      // Actualizar todas las listas después de cancelar
-      actualizarListasDespuesDeCancelar(reservaId);
-
-    } catch (error) {
-      console.error('Error al cancelar reserva:', error);
-      
-      // Mensaje de error más específico
-      let mensajeError = `❌ Error al cancelar: ${error.message}`;
-      
-      if (error.message.includes('permisos')) {
-        mensajeError += '\n\nNo tienes permisos para cancelar esta reserva.';
-      } else if (error.message.includes('404')) {
-        mensajeError += '\n\nLa reserva no fue encontrada en el sistema.';
-      } else if (error.message.includes('conexión')) {
-        mensajeError += '\n\nPor favor, verifica tu conexión a internet e intenta nuevamente.';
-      }
-      
-      alert(mensajeError);
-    } finally {
-      setCancelando(prev => ({ ...prev, [reservaId]: false }));
-    }
-  };
-
-  // Cargar reservas - VERSIÓN CON VERIFICACIÓN AUTOMÁTICA
-  useEffect(() => {
-    const fetchReservas = async () => {
-      if (!token) {
-        console.log('⚠️ No hay token de autenticación');
-        setError('No estás autenticado. Por favor, inicia sesión.');
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('🔍 Buscando mis reservas para usuario ID:', userId);
-        
-        const endpoint = `https://tfgv2-production.up.railway.app/api/reservas/mis-reservas`;
-        
-        const response = await fetch(endpoint, {
-          method: 'GET',
-          headers: getHeaders()
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user');
-            setError('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-            setTimeout(() => navigate('/login'), 2000);
-            return;
-          }
-          throw new Error(data.error || `Error ${response.status}`);
-        }
-        
-        if (!data.success) {
-          throw new Error(data.error || 'Error al obtener reservas');
-        }
-
-        // Procesar reservas recibidas
-        processReservas(data.data || []);
-
-      } catch (error) {
-        console.error('❌ Error cargando reservas:', error);
-        setError(error.message || 'Error al cargar las reservas. Por favor, verifica tu conexión.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Función para procesar las reservas
-    const processReservas = (todasReservas) => {
-      console.log('📋 Total de reservas recibidas:', todasReservas.length);
-      
-      const ahora = new Date();
-      
-      // 🔍 Verificar reservas pendientes con más de 1 hora (para mostrar advertencia)
-      const reservasPendientesExpiradas = todasReservas.filter(reserva => {
-        if (reserva.estado !== 'pendiente') return false;
-        
-        try {
-          const fechaCreacion = new Date(reserva.created_at || reserva.fecha_creacion || ahora);
-          const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000));
-          return fechaCreacion < unaHoraAtras;
-        } catch (e) {
-          return false;
-        }
-      });
-      
-      if (reservasPendientesExpiradas.length > 0) {
-        console.warn(`⚠️  Encontradas ${reservasPendientesExpiradas.length} reservas pendientes con más de 1 hora`);
-        // Podrías mostrar una notificación aquí si lo deseas
-      }
-      
-      // Reservas activas (futuras y no canceladas)
-      const activas = todasReservas.filter(reserva => {
-        const fechaReserva = new Date(reserva.fecha + 'T' + reserva.hora_inicio + ':00');
-        return fechaReserva >= ahora && reserva.estado !== 'cancelada';
-      });
-      
-      setReservasActivas(activas);
-
-      // Reservas confirmadas (específicamente con estado 'confirmada' y futuras)
-      const confirmadas = todasReservas.filter(reserva => 
-        reserva.estado === 'confirmada' && new Date(reserva.fecha + 'T' + reserva.hora_inicio + ':00') >= ahora
-      );
-      setReservasConfirmadas(confirmadas);
-
-      // Historial (pasadas o canceladas)
-      const historial = todasReservas.filter(reserva => {
-        const fechaReserva = new Date(reserva.fecha + 'T' + reserva.hora_inicio + ':00');
-        return fechaReserva < ahora || reserva.estado === 'cancelada';
-      });
-      setReservasHistorial(historial);
-    };
-
-    if (token) {
-      fetchReservas();
-    } else {
-      setLoading(false);
-      setError('No estás autenticado. Por favor, inicia sesión.');
-    }
-  }, [userId, token, navigate]);
-
   // 👇 EFECTO PARA VERIFICACIÓN PERIÓDICA DE CANCELACIÓN AUTOMÁTICA
   useEffect(() => {
+    if (!token) return;
+    
     // Configurar intervalo para verificar cada 5 minutos
     intervaloRef.current = setInterval(() => {
       verificarCancelacionAutomatica();
@@ -360,6 +417,8 @@ export default function Reservas() {
   // 🎯 FUNCIÓN PARA FORMATO DE FECHA
   const formatearFecha = (fechaStr) => {
     try {
+      if (!fechaStr) return 'Fecha no disponible';
+      
       const [anio, mes, dia] = fechaStr.split('-');
       const fecha = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
       
@@ -378,6 +437,8 @@ export default function Reservas() {
   // 🎯 FUNCIÓN PARA FORMATO DE FECHA CON HORA
   const formatearFechaParaTarjeta = (fechaStr, horaInicio) => {
     try {
+      if (!fechaStr || !horaInicio) return 'Fecha/hora no disponible';
+      
       const [anio, mes, dia] = fechaStr.split('-');
       const [horas, minutos] = horaInicio.split(':');
       
@@ -446,6 +507,9 @@ export default function Reservas() {
       } else {
         const horas = Math.floor(diferenciaMinutos / 60);
         const minutos = diferenciaMinutos % 60;
+        if (minutos === 0) {
+          return `${horas} hora${horas !== 1 ? 's' : ''}`;
+        }
         return `${horas}h ${minutos}min`;
       }
     } catch (e) {
@@ -465,13 +529,16 @@ export default function Reservas() {
     navigate(`/resumen-reserva?reserva=${encodeURIComponent(JSON.stringify(reserva))}`);
   };
 
-  // Filtrado de reservas
+  // Filtrado de reservas - MEJORADO
   const reservasFiltradas = useMemo(() => {
+    console.log('🔍 Aplicando filtros a reservas activas:', reservasActivas.length);
+    
     let filtradas = [...reservasActivas];
     
     // Filtrar por estado
     if (filtroEstado !== 'todos') {
       filtradas = filtradas.filter(reserva => reserva.estado === filtroEstado);
+      console.log('   Después de filtrar por estado:', filtradas.length);
     }
     
     // Filtrar por fecha
@@ -503,15 +570,19 @@ export default function Reservas() {
           return true;
         }
       });
+      console.log('   Después de filtrar por fecha:', filtradas.length);
     }
     
     // Filtrar por tipo de pista
     if (filtroTipo !== 'todos' && filtroTipo !== '') {
-      filtradas = filtradas.filter(reserva => 
-        reserva.pistaTipo && reserva.pistaTipo.toLowerCase().includes(filtroTipo.toLowerCase())
-      );
+      filtradas = filtradas.filter(reserva => {
+        const tipoPista = reserva.pistaTipo || reserva.pistas?.tipo || '';
+        return tipoPista.toLowerCase().includes(filtroTipo.toLowerCase());
+      });
+      console.log('   Después de filtrar por tipo:', filtradas.length);
     }
     
+    console.log('✅ Total después de filtrar:', filtradas.length);
     return filtradas;
   }, [reservasActivas, filtroEstado, filtroFecha, filtroTipo]);
 
@@ -535,7 +606,7 @@ export default function Reservas() {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>Cargando reservas...</p>
+        <p>Cargando tus reservas...</p>
       </div>
     );
   }
@@ -579,6 +650,12 @@ export default function Reservas() {
     }
   });
 
+  console.log('🎯 Estado actual del componente:');
+  console.log('   Activas:', reservasActivas.length);
+  console.log('   Confirmadas:', reservasConfirmadas.length);
+  console.log('   Historial:', reservasHistorial.length);
+  console.log('   Pendientes expiradas:', reservasPendientesExpiradas.length);
+
   return (
     <div className="reservas-container">
       {/* HEADER CON FLECHA PARA VOLVER ATRÁS */}
@@ -620,7 +697,7 @@ export default function Reservas() {
           <div className="advertencia-reservas">
             {reservasPendientesExpiradas.slice(0, 3).map((reserva, index) => (
               <div key={`exp-${reserva.id}`} className="advertencia-item">
-                <span>{reserva.pistaNombre || `Pista ${reserva.pista_id}`}</span>
+                <span>{reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}</span>
                 <span className="advertencia-tiempo">
                   ({getTiempoDesdeCreacion(reserva)} pendiente)
                 </span>
@@ -732,7 +809,7 @@ export default function Reservas() {
             )}
           </p>
 
-          {reservasFiltradas.length === 0 && reservasConfirmadas.length === 0 && reservasHistorial.length === 0 ? (
+          {reservasActivas.length === 0 && reservasConfirmadas.length === 0 && reservasHistorial.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📅</div>
               <p>No tienes reservas todavía</p>
@@ -743,11 +820,26 @@ export default function Reservas() {
                 + Crear nueva reserva
               </button>
             </div>
-          ) : reservasFiltradas.length === 0 ? (
+          ) : reservasFiltradas.length === 0 && filtroEstado === 'todos' && filtroFecha === 'todas' && filtroTipo === 'todos' ? (
             <div className="empty-state">
               <div className="empty-icon">✅</div>
               <p>No tienes reservas activas</p>
               <p className="empty-subtext">Todas tus reservas están confirmadas o en el historial</p>
+            </div>
+          ) : reservasFiltradas.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🔍</div>
+              <p>No se encontraron reservas con los filtros aplicados</p>
+              <button 
+                className="btn-limpiar-filtros-empty"
+                onClick={() => {
+                  setFiltroEstado('todos');
+                  setFiltroFecha('todas');
+                  setFiltroTipo('todos');
+                }}
+              >
+                Limpiar filtros
+              </button>
             </div>
           ) : (
             <div className="reservas-grid">
@@ -788,15 +880,15 @@ export default function Reservas() {
                         </div>
                       )}
                       
-                      <h3 className="pista-nombre">{reserva.pistaNombre || `Pista ${reserva.pista_id}`}</h3>
+                      <h3 className="pista-nombre">{reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}</h3>
                       <p className="pista-tipo">
-                        {reserva.pistaTipo || 'Sin especificar'}
+                        {reserva.pistaTipo || reserva.pistas?.tipo || 'Sin especificar'}
                         {reserva.ludoteca && <span className="ludoteca-badge"> 🧸 Ludoteca</span>}
                       </p>
                       
                       <div className="info-row">
                         <span className="info-icon">📍</span>
-                        <span className="info-text">{reserva.polideportivo_nombre || `Polideportivo ${reserva.polideportivo_id}`}</span>
+                        <span className="info-text">{reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}</span>
                       </div>
                       
                       <div className="info-row">
@@ -867,9 +959,9 @@ export default function Reservas() {
                   </div>
                   
                   <div className="confirmada-content">
-                    <h4>{reserva.pistaNombre || `Pista ${reserva.pista_id}`}</h4>
+                    <h4>{reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}</h4>
                     <p className="confirmada-lugar">
-                      {reserva.polideportivo_nombre || `Polideportivo ${reserva.polideportivo_id}`}
+                      {reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}
                     </p>
                     <p className="confirmada-horario">
                       {reserva.hora_inicio} - {reserva.hora_fin} • €{parseFloat(reserva.precio || 0).toFixed(2)}
@@ -924,10 +1016,10 @@ export default function Reservas() {
                     
                     <div className="historial-info">
                       <span className="historial-pista">
-                        {reserva.pistaNombre || `Pista ${reserva.pista_id}`}
+                        {reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}
                       </span>
                       <span className="historial-polideportivo">
-                        • {reserva.polideportivo_nombre || `Polideportivo ${reserva.polideportivo_id}`}
+                        • {reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}
                       </span>
                     </div>
                     
