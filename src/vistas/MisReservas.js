@@ -455,7 +455,7 @@ export default function Reservas() {
         console.log(`   Tiempo transcurrido: ${minutosTranscurridos} minutos (${horasTranscurridas.toFixed(2)} horas)`);
         
         // 🎯 Verificar si pasó más de 1 hora
-        const masDeUnaHora = tiempoTranscurrido > (2*60 * 60 * 1000);
+        const masDeUnaHora = tiempoTranscurrido > (60 * 60 * 1000);
         
         if (masDeUnaHora) {
           console.log(`   ⚠️ Pendiente por más de 1 hora: ${horasTranscurridas.toFixed(2)} horas`);
