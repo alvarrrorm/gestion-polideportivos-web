@@ -228,7 +228,7 @@ export default function Reservas() {
       }
     };
 
-    // Función para procesar las reservas - CORREGIDA
+    // 🎯 FUNCIÓN CORREGIDA PARA PROCESAR RESERVAS CON ZONA HORARIA
     const processReservas = (todasReservas) => {
       console.log('🔧 Procesando reservas recibidas:', todasReservas.length);
       
@@ -243,12 +243,18 @@ export default function Reservas() {
           pistaTipo: reserva.pistaTipo || reserva.pistas?.tipo,
           polideportivo_nombre: reserva.polideportivo_nombre || reserva.polideportivos?.nombre,
           precio: reserva.precio,
-          usuario_id: reserva.usuario_id
+          usuario_id: reserva.usuario_id,
+          hora_creacion: reserva.hora_creacion,
+          created_at: reserva.created_at
         });
       });
       
+      // 🎯 OBTENER HORA ACTUAL CORRECTAMENTE (local del navegador)
       const ahora = new Date();
-      console.log('⏰ Fecha/hora actual:', ahora.toISOString());
+      console.log('⏰ Fecha/hora actual LOCAL (navegador):', ahora.toString());
+      console.log('⏰ Fecha/hora actual UTC:', ahora.toISOString());
+      console.log('🌍 Zona horaria del navegador:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+      console.log('🕒 Diferencia UTC (horas):', ahora.getTimezoneOffset() / 60);
       
       // Inicializar arrays
       const activas = [];
@@ -265,57 +271,59 @@ export default function Reservas() {
             return;
           }
           
-          // Crear fecha de reserva de forma segura
-          let fechaReserva;
+          // 🎯 Crear fecha de reserva en la zona horaria LOCAL del usuario
+          let fechaReservaLocal;
           try {
-            // Separar fecha y hora
-            const fechaParts = reserva.fecha.split('-');
-            const horaParts = reserva.hora_inicio.split(':');
+            // Separar fecha y hora de la reserva
+            const [anio, mes, dia] = reserva.fecha.split('-').map(Number);
             
-            if (fechaParts.length === 3 && horaParts.length >= 2) {
-              const año = parseInt(fechaParts[0]);
-              const mes = parseInt(fechaParts[1]) - 1;
-              const dia = parseInt(fechaParts[2]);
-              const horas = parseInt(horaParts[0]);
-              const minutos = parseInt(horaParts[1]);
-              
-              fechaReserva = new Date(año, mes, dia, horas, minutos, 0);
-              
-              // Verificar si la fecha es válida
-              if (isNaN(fechaReserva.getTime())) {
-                console.warn(`⚠️ Fecha inválida para reserva ${reserva.id}:`, reserva.fecha, reserva.hora_inicio);
-                historial.push(reserva);
-                return;
-              }
-              
-              console.log(`Reserva ${reserva.id}:`, {
-                fechaOriginal: reserva.fecha,
-                horaOriginal: reserva.hora_inicio,
-                fechaReserva: fechaReserva.toISOString(),
-                ahora: ahora.toISOString(),
-                esFutura: fechaReserva >= ahora,
-                estado: reserva.estado
-              });
-              
-              // Clasificar la reserva
-              if (reserva.estado === 'cancelada') {
-                historial.push(reserva);
-              } else if (fechaReserva >= ahora) {
-                // Es futura
-                if (reserva.estado === 'confirmada') {
-                  confirmadas.push(reserva);
-                } else {
-                  activas.push(reserva);
-                }
+            // Extraer hora y minutos (ignorar segundos si existen)
+            const [horaStr, minutoStr] = reserva.hora_inicio.split(':');
+            const horas = parseInt(horaStr);
+            const minutos = parseInt(minutoStr || '0');
+            
+            // 🎯 IMPORTANTE: Crear fecha en zona horaria LOCAL (no UTC)
+            // Esto asegura que 08:00 en España sea 08:00, no 07:00 UTC
+            fechaReservaLocal = new Date(anio, mes - 1, dia, horas, minutos, 0);
+            
+            // Verificar si la fecha es válida
+            if (isNaN(fechaReservaLocal.getTime())) {
+              console.warn(`⚠️ Fecha inválida para reserva ${reserva.id}:`, reserva.fecha, reserva.hora_inicio);
+              historial.push(reserva);
+              return;
+            }
+            
+            console.log(`Reserva ${reserva.id}:`, {
+              fechaOriginal: reserva.fecha,
+              horaOriginal: reserva.hora_inicio,
+              fechaReservaLocal: fechaReservaLocal.toString(),
+              fechaReservaISO: fechaReservaLocal.toISOString(),
+              ahoraLocal: ahora.toString(),
+              ahoraISO: ahora.toISOString(),
+              esFutura: fechaReservaLocal > ahora, // Usar > en lugar de >=
+              diferenciaMinutos: (fechaReservaLocal.getTime() - ahora.getTime()) / (1000 * 60),
+              estado: reserva.estado
+            });
+            
+            // 🎯 CLASIFICAR LA RESERVA CON LÓGICA CORREGIDA
+            if (reserva.estado === 'cancelada') {
+              // Reservas canceladas van directamente al historial
+              historial.push(reserva);
+            } else if (fechaReservaLocal > ahora) {
+              // 🎯 Es futura (fecha de reserva > hora actual)
+              if (reserva.estado === 'confirmada') {
+                confirmadas.push(reserva);
+              } else if (reserva.estado === 'pendiente') {
+                activas.push(reserva);
               } else {
-                // Es pasada
                 historial.push(reserva);
               }
-              
             } else {
-              console.warn(`⚠️ Formato de fecha/hora inválido para reserva ${reserva.id}:`, reserva.fecha, reserva.hora_inicio);
+              // 🎯 Es pasada o presente (fecha de reserva <= hora actual)
+              // Todas las reservas pasadas van al historial
               historial.push(reserva);
             }
+            
           } catch (fechaError) {
             console.error(`❌ Error procesando fecha para reserva ${reserva.id}:`, fechaError);
             historial.push(reserva);
@@ -342,6 +350,39 @@ export default function Reservas() {
       console.log('   Confirmadas:', confirmadas.length);
       console.log('   Historial:', historial.length);
       console.log('   Total procesadas:', todasReservas.length);
+      
+      // Mostrar ejemplos de clasificación
+      if (todasReservas.length > 0) {
+        console.log('📝 EJEMPLOS DE CLASIFICACIÓN:');
+        const ejemploActiva = activas[0];
+        const ejemploConfirmada = confirmadas[0];
+        const ejemploHistorial = historial[0];
+        
+        if (ejemploActiva) {
+          console.log('   Activa:', {
+            id: ejemploActiva.id,
+            fecha: ejemploActiva.fecha,
+            hora: ejemploActiva.hora_inicio,
+            estado: ejemploActiva.estado
+          });
+        }
+        if (ejemploConfirmada) {
+          console.log('   Confirmada:', {
+            id: ejemploConfirmada.id,
+            fecha: ejemploConfirmada.fecha,
+            hora: ejemploConfirmada.hora_inicio,
+            estado: ejemploConfirmada.estado
+          });
+        }
+        if (ejemploHistorial) {
+          console.log('   Historial:', {
+            id: ejemploHistorial.id,
+            fecha: ejemploHistorial.fecha,
+            hora: ejemploHistorial.hora_inicio,
+            estado: ejemploHistorial.estado
+          });
+        }
+      }
     };
 
     if (token) {
@@ -354,30 +395,75 @@ export default function Reservas() {
     }
   }, [userId, token, navigate]);
 
-  // 👇 FUNCIÓN PARA CANCELAR RESERVA AUTOMÁTICAMENTE SI LLEVA MÁS DE 1 HORA PENDIENTE
+  // 👇 FUNCIÓN CORREGIDA PARA CANCELAR RESERVA AUTOMÁTICAMENTE SI LLEVA MÁS DE 1 HORA PENDIENTE
   const verificarCancelacionAutomatica = async () => {
     if (!token || reservasActivas.length === 0) return;
     
+    // 🎯 Obtener hora actual CORRECTA (local del navegador)
     const ahora = new Date();
-    const unaHoraAtras = new Date(ahora.getTime() - ( 60 * 1000)); // 1 hora atrás
+    console.log('🔄 Verificación automática - Hora actual:', ahora.toString());
+    
+    // 🎯 Calcular 1 hora atrás usando la misma referencia de tiempo
+    const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000));
     
     console.log('⏰ Verificando cancelación automática de reservas (1 hora)...');
+    console.log('   Hora actual:', ahora.toString());
+    console.log('   1 hora atrás:', unaHoraAtras.toString());
     
-    // Filtrar reservas pendientes que tengan más de 1 hora
+    // Filtrar reservas pendientes que tengan más de 1 hora desde su creación
     const reservasParaCancelar = reservasActivas.filter(reserva => {
       if (reserva.estado !== 'pendiente') return false;
       
       try {
-        // Obtener fecha de creación de la reserva
-        const fechaCreacion = new Date(reserva.created_at || reserva.fecha_creacion || ahora);
+        // 🎯 Obtener fecha de creación de la reserva CORRECTAMENTE
+        const fechaCreacionStr = reserva.created_at || reserva.hora_creacion || reserva.fecha_creacion;
+        
+        if (!fechaCreacionStr) {
+          console.warn(`⚠️ Reserva ${reserva.id} sin fecha de creación`);
+          return false;
+        }
+        
+        // 🎯 Convertir la fecha de creación a objeto Date
+        let fechaCreacion;
+        if (typeof fechaCreacionStr === 'string') {
+          // Intentar parsear diferentes formatos de fecha
+          if (fechaCreacionStr.includes('T')) {
+            // Formato ISO
+            fechaCreacion = new Date(fechaCreacionStr);
+          } else {
+            // Formato personalizado 'YYYY-MM-DD HH:MM:SS'
+            const [fecha, hora] = fechaCreacionStr.split(' ');
+            const [anio, mes, dia] = fecha.split('-').map(Number);
+            const [horas, minutos, segundos] = hora.split(':').map(Number);
+            fechaCreacion = new Date(anio, mes - 1, dia, horas, minutos, segundos || 0);
+          }
+        } else {
+          fechaCreacion = new Date(fechaCreacionStr);
+        }
+        
+        // Verificar que la fecha sea válida
+        if (isNaN(fechaCreacion.getTime())) {
+          console.warn(`⚠️ Fecha de creación inválida para reserva ${reserva.id}:`, fechaCreacionStr);
+          return false;
+        }
+        
         const tiempoTranscurrido = ahora.getTime() - fechaCreacion.getTime();
         const minutosTranscurridos = Math.floor(tiempoTranscurrido / (1000 * 60));
+        const horasTranscurridas = minutosTranscurridos / 60;
         
-        console.log(`Reserva ${reserva.id}: Creada hace ${minutosTranscurridos} minutos`);
+        console.log(`Reserva ${reserva.id}: Creada el ${fechaCreacion.toString()}`);
+        console.log(`   Tiempo transcurrido: ${minutosTranscurridos} minutos (${horasTranscurridas.toFixed(2)} horas)`);
         
-        return fechaCreacion < unaHoraAtras;
+        // 🎯 Verificar si pasó más de 1 hora
+        const masDeUnaHora = tiempoTranscurrido > (60 * 60 * 1000);
+        
+        if (masDeUnaHora) {
+          console.log(`   ⚠️ Pendiente por más de 1 hora: ${horasTranscurridas.toFixed(2)} horas`);
+        }
+        
+        return masDeUnaHora;
       } catch (e) {
-        console.error('Error verificando fecha de creación:', e);
+        console.error(`Error verificando fecha de creación para reserva ${reserva.id}:`, e);
         return false;
       }
     });
@@ -427,7 +513,7 @@ export default function Reservas() {
     // Configurar intervalo para verificar cada 5 minutos
     intervaloRef.current = setInterval(() => {
       verificarCancelacionAutomatica();
-    }, 30 * 1000); // 5 minutos
+    }, 5 * 60 * 1000); // 5 minutos
     
     // Verificar inmediatamente al cargar
     verificarCancelacionAutomatica();
@@ -464,11 +550,12 @@ export default function Reservas() {
     }
   };
 
-  // 🎯 FUNCIÓN PARA FORMATO DE FECHA CON HORA
+  // 🎯 FUNCIÓN CORREGIDA PARA FORMATO DE FECHA CON HORA
   const formatearFechaParaTarjeta = (fechaStr, horaInicio) => {
     try {
       if (!fechaStr || !horaInicio) return 'Fecha/hora no disponible';
       
+      // 🎯 Crear fecha de reserva en zona horaria LOCAL
       const [anio, mes, dia] = fechaStr.split('-');
       const [horas, minutos] = horaInicio.split(':');
       
@@ -487,7 +574,7 @@ export default function Reservas() {
       
       const ahora = new Date();
       
-      // Calcular diferencia en días (solo fecha, sin hora)
+      // 🎯 Calcular diferencia en días usando fecha LOCAL
       const fechaReservaDia = new Date(
         fechaReserva.getFullYear(),
         fechaReserva.getMonth(),
@@ -528,10 +615,35 @@ export default function Reservas() {
     }
   };
 
-  // 👇 FUNCIÓN PARA MOSTRAR TIEMPO TRANSCURRIDO DESDE LA CREACIÓN
+  // 👇 FUNCIÓN CORREGIDA PARA MOSTRAR TIEMPO TRANSCURRIDO DESDE LA CREACIÓN
   const getTiempoDesdeCreacion = (reserva) => {
     try {
-      const fechaCreacion = new Date(reserva.created_at || reserva.fecha_creacion || new Date());
+      const fechaCreacionStr = reserva.created_at || reserva.hora_creacion || reserva.fecha_creacion;
+      
+      if (!fechaCreacionStr) return 'N/A';
+      
+      // 🎯 Convertir fecha de creación a objeto Date
+      let fechaCreacion;
+      if (typeof fechaCreacionStr === 'string') {
+        if (fechaCreacionStr.includes('T')) {
+          // Formato ISO
+          fechaCreacion = new Date(fechaCreacionStr);
+        } else {
+          // Formato personalizado 'YYYY-MM-DD HH:MM:SS'
+          const [fecha, hora] = fechaCreacionStr.split(' ');
+          const [anio, mes, dia] = fecha.split('-').map(Number);
+          const [horas, minutos, segundos] = hora.split(':').map(Number);
+          fechaCreacion = new Date(anio, mes - 1, dia, horas, minutos, segundos || 0);
+        }
+      } else {
+        fechaCreacion = new Date(fechaCreacionStr);
+      }
+      
+      if (isNaN(fechaCreacion.getTime())) {
+        console.warn('Fecha de creación inválida:', fechaCreacionStr);
+        return 'N/A';
+      }
+      
       const ahora = new Date();
       const diferenciaMs = ahora.getTime() - fechaCreacion.getTime();
       const diferenciaMinutos = Math.floor(diferenciaMs / (1000 * 60));
@@ -547,6 +659,7 @@ export default function Reservas() {
         return `${horas}h ${minutos}min`;
       }
     } catch (e) {
+      console.error('Error calculando tiempo desde creación:', e);
       return 'N/A';
     }
   };
@@ -622,12 +735,34 @@ export default function Reservas() {
 
   // Calcular reservas pendientes con más de 1 hora (para mostrar advertencia)
   const reservasPendientesExpiradas = useMemo(() => {
+    const ahora = new Date();
+    
     return reservasActivas.filter(reserva => {
       if (reserva.estado !== 'pendiente') return false;
       
       try {
-        const fechaCreacion = new Date(reserva.created_at || reserva.fecha_creacion || new Date());
-        const unaHoraAtras = new Date(new Date().getTime() - (60 * 60 * 1000));
+        const fechaCreacionStr = reserva.created_at || reserva.hora_creacion || reserva.fecha_creacion;
+        
+        if (!fechaCreacionStr) return false;
+        
+        // 🎯 Convertir fecha de creación
+        let fechaCreacion;
+        if (typeof fechaCreacionStr === 'string') {
+          if (fechaCreacionStr.includes('T')) {
+            fechaCreacion = new Date(fechaCreacionStr);
+          } else {
+            const [fecha, hora] = fechaCreacionStr.split(' ');
+            const [anio, mes, dia] = fecha.split('-').map(Number);
+            const [horas, minutos, segundos] = hora.split(':').map(Number);
+            fechaCreacion = new Date(anio, mes - 1, dia, horas, minutos, segundos || 0);
+          }
+        } else {
+          fechaCreacion = new Date(fechaCreacionStr);
+        }
+        
+        if (isNaN(fechaCreacion.getTime())) return false;
+        
+        const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000));
         return fechaCreacion < unaHoraAtras;
       } catch (e) {
         return false;
