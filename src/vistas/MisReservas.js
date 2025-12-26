@@ -404,7 +404,7 @@ export default function Reservas() {
     console.log('🔄 Verificación automática - Hora actual:', ahora.toString());
     
     // 🎯 Calcular 1 hora atrás usando la misma referencia de tiempo
-    const unaHoraAtras = new Date(ahora.getTime() - (2* 60 * 60 * 1000));
+    const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000));
     
     console.log('⏰ Verificando cancelación automática de reservas (1 hora)...');
     console.log('   Hora actual:', ahora.toString());
@@ -455,7 +455,7 @@ export default function Reservas() {
         console.log(`   Tiempo transcurrido: ${minutosTranscurridos} minutos (${horasTranscurridas.toFixed(2)} horas)`);
         
         // 🎯 Verificar si pasó más de 1 hora
-        const masDeUnaHora = tiempoTranscurrido > ( 60 * 1000);
+        const masDeUnaHora = tiempoTranscurrido > (2*60 * 60 * 1000);
         
         if (masDeUnaHora) {
           console.log(`   ⚠️ Pendiente por más de 1 hora: ${horasTranscurridas.toFixed(2)} horas`);
@@ -762,7 +762,7 @@ export default function Reservas() {
         
         if (isNaN(fechaCreacion.getTime())) return false;
         
-        const unaHoraAtras = new Date(ahora.getTime() - (2 * 60 * 60 * 1000));
+        const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000));
         return fechaCreacion < unaHoraAtras;
       } catch (e) {
         return false;
