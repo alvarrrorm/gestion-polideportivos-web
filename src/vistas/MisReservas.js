@@ -355,65 +355,65 @@ export default function Reservas() {
   }, [userId, token, navigate]);
 
   // 👇 FUNCIÓN PARA CANCELAR RESERVA AUTOMÁTICAMENTE SI LLEVA MÁS DE 1 HORA PENDIENTE
-  const verificarCancelacionAutomatica = async () => {
-    if (!token || reservasActivas.length === 0) return;
+const verificarCancelacionAutomatica = async () => {
+  if (!token || reservasActivas.length === 0) return;
+  
+  const ahora = new Date();
+  const unMinutoAtras = new Date(ahora.getTime() - (60 * 1000)); // 1 minuto atrás ← CAMBIO AQUÍ
     
-    const ahora = new Date();
-    const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000)); // 1 hora atrás
+  console.log('⏰ Verificando cancelación automática de reservas (cada minuto)...');
+  
+  // Filtrar reservas pendientes que tengan más de 1 MINUTO ← CAMBIO AQUÍ
+  const reservasParaCancelar = reservasActivas.filter(reserva => {
+    if (reserva.estado !== 'pendiente') return false;
     
-    console.log('⏰ Verificando cancelación automática de reservas...');
-    
-    // Filtrar reservas pendientes que tengan más de 1 hora
-    const reservasParaCancelar = reservasActivas.filter(reserva => {
-      if (reserva.estado !== 'pendiente') return false;
+    try {
+      // Obtener fecha de creación de la reserva
+      const fechaCreacion = new Date(reserva.created_at || reserva.fecha_creacion || ahora);
+      return fechaCreacion < unMinutoAtras; // ← CAMBIO AQUÍ
+    } catch (e) {
+      console.error('Error verificando fecha de creación:', e);
+      return false;
+    }
+  });
+  
+  if (reservasParaCancelar.length === 0) {
+    console.log('✅ No hay reservas pendientes con más de 1 minuto'); // ← CAMBIO AQUÍ
+    return;
+  }
+  
+  console.log(`🔄 Encontradas ${reservasParaCancelar.length} reservas para cancelar automáticamente`);
+  
+  // Cancelar cada reserva pendiente con más de 1 MINUTO ← CAMBIO AQUÍ
+  for (const reserva of reservasParaCancelar) {
+    try {
+      console.log(`⏰ Cancelando automáticamente reserva ID: ${reserva.id} (creada hace más de 1 minuto)`); // ← CAMBIO AQUÍ
       
-      try {
-        // Obtener fecha de creación de la reserva
-        const fechaCreacion = new Date(reserva.created_at || reserva.fecha_creacion || ahora);
-        return fechaCreacion < unaHoraAtras;
-      } catch (e) {
-        console.error('Error verificando fecha de creación:', e);
-        return false;
-      }
-    });
-    
-    if (reservasParaCancelar.length === 0) {
-      console.log('✅ No hay reservas pendientes con más de 1 hora');
-      return;
-    }
-    
-    console.log(`🔄 Encontradas ${reservasParaCancelar.length} reservas para cancelar automáticamente`);
-    
-    // Cancelar cada reserva pendiente con más de 1 hora
-    for (const reserva of reservasParaCancelar) {
-      try {
-        console.log(`⏰ Cancelando automáticamente reserva ID: ${reserva.id} (creada hace más de 1 hora)`);
+      const response = await fetch(`https://tfgv2-production.up.railway.app/api/reservas/${reserva.id}/cancelar`, {
+        method: 'PUT',
+        headers: getHeaders()
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        console.log(`✅ Reserva ${reserva.id} cancelada automáticamente por tiempo expirado (más de 1 minuto)`); // ← CAMBIO AQUÍ
         
-        const response = await fetch(`https://tfgv2-production.up.railway.app/api/reservas/${reserva.id}/cancelar`, {
-          method: 'PUT',
-          headers: getHeaders()
-        });
+        // Actualizar estado localmente
+        actualizarListasDespuesDeCancelar(reserva.id, true);
         
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-          console.log(`✅ Reserva ${reserva.id} cancelada automáticamente por tiempo expirado`);
-          
-          // Actualizar estado localmente
-          actualizarListasDespuesDeCancelar(reserva.id, true);
-          
-          // Notificar al usuario
-          if (reservasParaCancelar.length === 1) {
-            alert('ℹ️ Se ha cancelado automáticamente una reserva pendiente que llevaba más de 1 hora');
-          }
-        } else {
-          console.warn(`⚠️ No se pudo cancelar automáticamente reserva ${reserva.id}:`, data.error);
+        // Notificar al usuario
+        if (reservasParaCancelar.length === 1) {
+          alert('ℹ️ Se ha cancelado automáticamente una reserva pendiente que llevaba más de 1 minuto'); // ← CAMBIO AQUÍ
         }
-      } catch (error) {
-        console.error(`❌ Error cancelando automáticamente reserva ${reserva.id}:`, error);
+      } else {
+        console.warn(`⚠️ No se pudo cancelar automáticamente reserva ${reserva.id}:`, data.error);
       }
+    } catch (error) {
+      console.error(`❌ Error cancelando automáticamente reserva ${reserva.id}:`, error);
     }
-  };
+  }
+};
 
   // 👇 EFECTO PARA VERIFICACIÓN PERIÓDICA DE CANCELACIÓN AUTOMÁTICA
   useEffect(() => {
