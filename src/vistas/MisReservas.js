@@ -31,7 +31,7 @@ export default function Reservas() {
     navigate('/reservas');
   };
 
-  // Función para obtener headers con autenticación - MEJORADA
+  // Función para obtener headers con autenticación
   const getHeaders = () => {
     const headers = {
       'Content-Type': 'application/json',
@@ -39,9 +39,6 @@ export default function Reservas() {
     
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('🔑 Token incluido en headers');
-    } else {
-      console.warn('⚠️ No hay token disponible');
     }
     
     return headers;
@@ -170,7 +167,7 @@ export default function Reservas() {
     }
   };
 
-  // Cargar reservas - VERSIÓN MEJORADA CON MÁS LOGGING
+  // Cargar reservas - VERSIÓN CORREGIDA CON MANEJO DE ERRORES DE FECHA
   useEffect(() => {
     const fetchReservas = async () => {
       console.log('🔄 Iniciando carga de reservas...');
@@ -231,7 +228,7 @@ export default function Reservas() {
       }
     };
 
-    // Función para procesar las reservas - MEJORADA
+    // Función para procesar las reservas - CORREGIDA
     const processReservas = (todasReservas) => {
       console.log('🔧 Procesando reservas recibidas:', todasReservas.length);
       
@@ -253,65 +250,89 @@ export default function Reservas() {
       const ahora = new Date();
       console.log('⏰ Fecha/hora actual:', ahora.toISOString());
       
-      // Reservas activas (futuras y no canceladas)
-      const activas = todasReservas.filter(reserva => {
+      // Inicializar arrays
+      const activas = [];
+      const confirmadas = [];
+      const historial = [];
+      
+      // Procesar cada reserva individualmente
+      todasReservas.forEach((reserva) => {
         try {
           // Verificar que la reserva tenga fecha y hora
           if (!reserva.fecha || !reserva.hora_inicio) {
             console.warn('⚠️ Reserva sin fecha/hora:', reserva.id);
-            return false;
+            historial.push(reserva);
+            return;
           }
           
-          const fechaReserva = new Date(`${reserva.fecha}T${reserva.hora_inicio}:00`);
-          const esFutura = fechaReserva >= ahora;
-          const noCancelada = reserva.estado !== 'cancelada';
+          // Crear fecha de reserva de forma segura
+          let fechaReserva;
+          try {
+            // Separar fecha y hora
+            const fechaParts = reserva.fecha.split('-');
+            const horaParts = reserva.hora_inicio.split(':');
+            
+            if (fechaParts.length === 3 && horaParts.length >= 2) {
+              const año = parseInt(fechaParts[0]);
+              const mes = parseInt(fechaParts[1]) - 1;
+              const dia = parseInt(fechaParts[2]);
+              const horas = parseInt(horaParts[0]);
+              const minutos = parseInt(horaParts[1]);
+              
+              fechaReserva = new Date(año, mes, dia, horas, minutos, 0);
+              
+              // Verificar si la fecha es válida
+              if (isNaN(fechaReserva.getTime())) {
+                console.warn(`⚠️ Fecha inválida para reserva ${reserva.id}:`, reserva.fecha, reserva.hora_inicio);
+                historial.push(reserva);
+                return;
+              }
+              
+              console.log(`Reserva ${reserva.id}:`, {
+                fechaOriginal: reserva.fecha,
+                horaOriginal: reserva.hora_inicio,
+                fechaReserva: fechaReserva.toISOString(),
+                ahora: ahora.toISOString(),
+                esFutura: fechaReserva >= ahora,
+                estado: reserva.estado
+              });
+              
+              // Clasificar la reserva
+              if (reserva.estado === 'cancelada') {
+                historial.push(reserva);
+              } else if (fechaReserva >= ahora) {
+                // Es futura
+                if (reserva.estado === 'confirmada') {
+                  confirmadas.push(reserva);
+                } else {
+                  activas.push(reserva);
+                }
+              } else {
+                // Es pasada
+                historial.push(reserva);
+              }
+              
+            } else {
+              console.warn(`⚠️ Formato de fecha/hora inválido para reserva ${reserva.id}:`, reserva.fecha, reserva.hora_inicio);
+              historial.push(reserva);
+            }
+          } catch (fechaError) {
+            console.error(`❌ Error procesando fecha para reserva ${reserva.id}:`, fechaError);
+            historial.push(reserva);
+          }
           
-          console.log(`Reserva ${reserva.id}:`, {
-            fechaReserva: fechaReserva.toISOString(),
-            esFutura,
-            estado: reserva.estado,
-            noCancelada,
-            esActiva: esFutura && noCancelada
-          });
-          
-          return esFutura && noCancelada;
         } catch (e) {
-          console.error('Error procesando reserva activa:', e, reserva);
-          return false;
+          console.error(`❌ Error general procesando reserva ${reserva.id}:`, e);
+          historial.push(reserva);
         }
       });
       
       console.log('✅ Reservas activas encontradas:', activas.length);
       setReservasActivas(activas);
 
-      // Reservas confirmadas (específicamente con estado 'confirmada' y futuras)
-      const confirmadas = todasReservas.filter(reserva => {
-        try {
-          const fechaReserva = new Date(`${reserva.fecha}T${reserva.hora_inicio}:00`);
-          return reserva.estado === 'confirmada' && fechaReserva >= ahora;
-        } catch (e) {
-          console.error('Error procesando reserva confirmada:', e, reserva);
-          return false;
-        }
-      });
-      
       console.log('✅ Reservas confirmadas encontradas:', confirmadas.length);
       setReservasConfirmadas(confirmadas);
 
-      // Historial (pasadas o canceladas)
-      const historial = todasReservas.filter(reserva => {
-        try {
-          const fechaReserva = new Date(`${reserva.fecha}T${reserva.hora_inicio}:00`);
-          const esPasada = fechaReserva < ahora;
-          const esCancelada = reserva.estado === 'cancelada';
-          
-          return esPasada || esCancelada;
-        } catch (e) {
-          console.error('Error procesando historial:', e, reserva);
-          return false;
-        }
-      });
-      
       console.log('📜 Reservas en historial:', historial.length);
       setReservasHistorial(historial);
       
@@ -422,6 +443,10 @@ export default function Reservas() {
       const [anio, mes, dia] = fechaStr.split('-');
       const fecha = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
       
+      if (isNaN(fecha.getTime())) {
+        return fechaStr;
+      }
+      
       return fecha.toLocaleDateString('es-ES', {
         weekday: 'short',
         day: 'numeric',
@@ -450,6 +475,10 @@ export default function Reservas() {
         parseInt(minutos), 
         0
       );
+      
+      if (isNaN(fechaReserva.getTime())) {
+        return `${fechaStr} ${horaInicio}`;
+      }
       
       const ahora = new Date();
       
