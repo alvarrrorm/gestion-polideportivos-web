@@ -38,6 +38,13 @@ export default function AdminPanel({ navigation }) {
   const [nuevoPolideportivoTelefono, setNuevoPolideportivoTelefono] = useState('');
   const [modalPistaVisible, setModalPistaVisible] = useState(false);
   const [modalPistaEdicionVisible, setModalPistaEdicionVisible] = useState(false);
+  const [filtroPolideportivo, setFiltroPolideportivo] = useState('todos');
+  
+  // Estados para edición completa de pista
+  const [editarNombrePista, setEditarNombrePista] = useState('');
+  const [editarTipoPista, setEditarTipoPista] = useState('');
+  const [editarPrecioPista, setEditarPrecioPista] = useState('');
+  const [editarDescripcionPista, setEditarDescripcionPista] = useState('');
   
   // Estados para gestión de usuarios
   const [modalPasswordVisible, setModalPasswordVisible] = useState(false);
@@ -46,10 +53,6 @@ export default function AdminPanel({ navigation }) {
   const [polideportivoSeleccionado, setPolideportivoSeleccionado] = useState('');
   const [passwordConfirmacion, setPasswordConfirmacion] = useState('');
   const [cambiandoRol, setCambiandoRol] = useState(false);
-
-  // Estados para filtros
-  const [filtroPolideportivo, setFiltroPolideportivo] = useState('todos');
-  const [filtroPolideportivoReservas, setFiltroPolideportivoReservas] = useState('todos');
 
   // Obtener el nombre del usuario desde el contexto de autenticación
   const usuarioNombre = user?.nombre || user?.usuario || 'Administrador';
@@ -262,11 +265,6 @@ export default function AdminPanel({ navigation }) {
   const pistasFiltradas = filtroPolideportivo === 'todos' 
     ? pistas 
     : pistas.filter(pista => pista.polideportivo_id.toString() === filtroPolideportivo);
-
-  // Filtrar reservas por polideportivo
-  const reservasFiltradas = filtroPolideportivoReservas === 'todos' 
-    ? reservas 
-    : reservas.filter(reserva => reserva.polideportivo_id.toString() === filtroPolideportivoReservas);
 
   // Agrupar pistas por tipo
   const pistasPorTipo = pistasFiltradas.reduce((acc, pista) => {
@@ -1130,54 +1128,23 @@ export default function AdminPanel({ navigation }) {
         return (
           <div className="tab-content">
             <div className="list-header">
-              <div className="seccion-header">
-                <div className="seccion-titulo">
-                  📋 Reservas ({reservasFiltradas.length})
-                </div>
-              </div>
-
-              <div className="filtro-container">
-                <div className="filtro-label">
-                  Filtrar por polideportivo:
-                </div>
-                <div className="filtro-botones">
-                  <button
-                    className={`filtro-boton ${filtroPolideportivoReservas === 'todos' ? 'filtro-boton-activo' : ''}`}
-                    onClick={() => setFiltroPolideportivoReservas('todos')}
-                  >
-                    Todos
-                  </button>
-                  {polideportivos.map(polideportivo => (
-                    <button
-                      key={`reserva-${polideportivo.id}`}
-                      className={`filtro-boton ${filtroPolideportivoReservas === polideportivo.id.toString() ? 'filtro-boton-activo' : ''}`}
-                      onClick={() => setFiltroPolideportivoReservas(polideportivo.id.toString())}
-                    >
-                      {polideportivo.nombre}
-                    </button>
-                  ))}
-                </div>
+              <div className="seccion-titulo">
+                📋 Reservas Activas ({reservas.length})
               </div>
             </div>
             
-            {reservasFiltradas.length === 0 ? (
+            {reservas.length === 0 ? (
               <div className="lista-vacia-container">
                 <div className="lista-vacia">
-                  {filtroPolideportivoReservas === 'todos' 
-                    ? 'No hay reservas activas' 
-                    : 'No hay reservas en este polideportivo'
-                  }
+                  No hay reservas activas
                 </div>
                 <div className="lista-vacia-subtexto">
-                  {filtroPolideportivoReservas === 'todos' 
-                    ? 'Las reservas aparecerán aquí cuando los usuarios realicen reservas' 
-                    : 'Cambia el filtro para ver reservas de otros polideportivos'
-                  }
+                  Las reservas aparecerán aquí cuando los usuarios realicen reservas
                 </div>
               </div>
             ) : (
               <div className="list-content">
-                {reservasFiltradas.map((item) => (
+                {reservas.map((item) => (
                   <div key={item.id.toString()}>
                     {renderReservaItem(item)}
                   </div>
