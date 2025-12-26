@@ -105,7 +105,7 @@ export default function Reservas() {
       
       // Reservas activas (futuras y no canceladas)
       const activas = todasReservas.filter(reserva => {
-        const fechaReserva = new Date(reserva.fecha + 'T' + reserva.hora_inicio + ':00');
+        const fechaReserva = new Date(reserva.fecha + 'T' + reserva.hora_inicio);
         return fechaReserva >= ahora && reserva.estado !== 'cancelada';
       });
       
@@ -113,13 +113,13 @@ export default function Reservas() {
 
       // Reservas confirmadas
       const confirmadas = todasReservas.filter(reserva => 
-        reserva.estado === 'confirmada' && new Date(reserva.fecha + 'T' + reserva.hora_inicio + ':00') >= ahora
+        reserva.estado === 'confirmada' && new Date(reserva.fecha + 'T' + reserva.hora_inicio) >= ahora
       );
       setReservasConfirmadas(confirmadas);
 
       // Historial (pasadas o canceladas)
       const historial = todasReservas.filter(reserva => {
-        const fechaReserva = new Date(reserva.fecha + 'T' + reserva.hora_inicio + ':00');
+        const fechaReserva = new Date(reserva.fecha + 'T' + reserva.hora_inicio);
         return fechaReserva < ahora || reserva.estado === 'cancelada';
       });
       setReservasHistorial(historial);
@@ -133,108 +133,43 @@ export default function Reservas() {
     }
   }, [userId, token, navigate]);
 
-  // 🎯 FUNCIÓN CORREGIDA PARA FORMATO DE FECHA
   const formatearFecha = (fechaStr) => {
     try {
-      // Separar fecha y hora
-      const [anio, mes, dia] = fechaStr.split('-');
-      
-      // Crear fecha con tiempo 12:00 para evitar problemas de zona horaria
-      const fecha = new Date(Date.UTC(parseInt(anio), parseInt(mes) - 1, parseInt(dia), 12, 0, 0));
-      
+      const fecha = new Date(fechaStr + 'T12:00:00');
       return fecha.toLocaleDateString('es-ES', {
         weekday: 'short',
         day: 'numeric',
         month: 'short',
-        year: 'numeric',
-        timeZone: 'UTC' // Usar UTC para consistencia
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch (e) {
-      console.error('Error formateando fecha:', e, fechaStr);
       return fechaStr;
     }
   };
 
-  // 🎯 FUNCIÓN CORREGIDA PARA FORMATO DE FECHA CON HORA
   const formatearFechaParaTarjeta = (fechaStr, horaInicio) => {
     try {
-      // Separar fecha
-      const [anio, mes, dia] = fechaStr.split('-');
-      // Separar hora
-      const [horas, minutos] = horaInicio.split(':');
-      
-      // Crear fecha con hora específica en UTC
-      const fechaReserva = new Date(Date.UTC(
-        parseInt(anio), 
-        parseInt(mes) - 1, 
-        parseInt(dia), 
-        parseInt(horas), 
-        parseInt(minutos), 
-        0
-      ));
-      
-      // Fecha actual en UTC
-      const ahoraUTC = new Date();
-      const ahora = new Date(Date.UTC(
-        ahoraUTC.getUTCFullYear(),
-        ahoraUTC.getUTCMonth(),
-        ahoraUTC.getUTCDate(),
-        ahoraUTC.getUTCHours(),
-        ahoraUTC.getUTCMinutes(),
-        ahoraUTC.getUTCSeconds()
-      ));
-      
-      // Calcular diferencia en días (solo fecha, sin hora)
-      const fechaReservaDia = new Date(Date.UTC(
-        fechaReserva.getUTCFullYear(),
-        fechaReserva.getUTCMonth(),
-        fechaReserva.getUTCDate()
-      ));
-      
-      const hoyDia = new Date(Date.UTC(
-        ahora.getUTCFullYear(),
-        ahora.getUTCMonth(),
-        ahora.getUTCDate()
-      ));
-      
-      const diferenciaMs = fechaReservaDia.getTime() - hoyDia.getTime();
-      const diferenciaDias = Math.floor(diferenciaMs / (1000 * 60 * 60 * 24));
-      
-      // Formatear hora
-      const horaFormateada = fechaReserva.toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        timeZone: 'UTC'
-      });
+      const fecha = new Date(fechaStr + 'T' + horaInicio);
+      const ahora = new Date();
+      const diferenciaDias = Math.floor((fecha - ahora) / (1000 * 60 * 60 * 24));
       
       if (diferenciaDias === 0) {
-        return `Hoy, ${horaFormateada}`;
+        return `Hoy, ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
       } else if (diferenciaDias === 1) {
-        return `Mañana, ${horaFormateada}`;
+        return `Mañana, ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
       } else {
-        return fechaReserva.toLocaleDateString('es-ES', {
+        return fecha.toLocaleDateString('es-ES', {
           weekday: 'short',
           day: 'numeric',
           month: 'short',
           hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'UTC'
+          minute: '2-digit'
         });
       }
     } catch (e) {
-      console.error('Error formateando fecha para tarjeta:', e, fechaStr, horaInicio);
       return `${fechaStr} ${horaInicio}`;
     }
-  };
-
-  // 🎯 FUNCIÓN AUXILIAR PARA OBTENER LA FECHA ACTUAL EN UTC
-  const getHoyUTC = () => {
-    const ahora = new Date();
-    return new Date(Date.UTC(
-      ahora.getUTCFullYear(),
-      ahora.getUTCMonth(),
-      ahora.getUTCDate()
-    ));
   };
 
   const irADetalles = (reserva) => {
@@ -299,7 +234,7 @@ export default function Reservas() {
     }
   };
 
-  // Filtrado de reservas - VERSIÓN CORREGIDA CON UTC
+  // Filtrado de reservas
   const reservasFiltradas = useMemo(() => {
     let filtradas = [...reservasActivas];
     
@@ -308,36 +243,27 @@ export default function Reservas() {
       filtradas = filtradas.filter(reserva => reserva.estado === filtroEstado);
     }
     
-    // Filtrar por fecha - VERSIÓN CORREGIDA CON UTC
+    // Filtrar por fecha
     if (filtroFecha !== 'todas') {
-      const hoyUTC = getHoyUTC();
-      const mañanaUTC = new Date(hoyUTC);
-      mañanaUTC.setUTCDate(mañanaUTC.getUTCDate() + 1);
-      const semanaSiguienteUTC = new Date(hoyUTC);
-      semanaSiguienteUTC.setUTCDate(semanaSiguienteUTC.getUTCDate() + 7);
+      const ahora = new Date();
+      const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+      const mañana = new Date(hoy);
+      mañana.setDate(mañana.getDate() + 1);
+      const semanaSiguiente = new Date(hoy);
+      semanaSiguiente.setDate(semanaSiguiente.getDate() + 7);
       
       filtradas = filtradas.filter(reserva => {
-        try {
-          const [anio, mes, dia] = reserva.fecha.split('-');
-          const fechaReservaUTC = new Date(Date.UTC(
-            parseInt(anio), 
-            parseInt(mes) - 1, 
-            parseInt(dia)
-          ));
-          
-          switch(filtroFecha) {
-            case 'hoy':
-              return fechaReservaUTC.getTime() === hoyUTC.getTime();
-            case 'mañana':
-              return fechaReservaUTC.getTime() === mañanaUTC.getTime();
-            case 'semana':
-              return fechaReservaUTC >= hoyUTC && fechaReservaUTC < semanaSiguienteUTC;
-            default:
-              return true;
-          }
-        } catch (e) {
-          console.error('Error filtrando por fecha:', e);
-          return true;
+        const fechaReserva = new Date(reserva.fecha + 'T' + reserva.hora_inicio);
+        
+        switch(filtroFecha) {
+          case 'hoy':
+            return fechaReserva >= hoy && fechaReserva < mañana;
+          case 'mañana':
+            return fechaReserva >= mañana && fechaReserva < semanaSiguiente;
+          case 'semana':
+            return fechaReserva >= hoy && fechaReserva < semanaSiguiente;
+          default:
+            return true;
         }
       });
     }
