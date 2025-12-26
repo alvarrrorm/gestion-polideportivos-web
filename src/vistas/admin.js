@@ -101,6 +101,38 @@ export default function AdminPanel({ navigation }) {
     return false;
   }, [logout]);
 
+  // Obtener nombre del polideportivo - FUNCIÓN MEJORADA
+  const obtenerNombrePolideportivo = useCallback((polideportivoId) => {
+    if (!polideportivoId && polideportivoId !== 0) return 'Desconocido';
+    
+    // Convertir a número si es string
+    const id = typeof polideportivoId === 'string' ? parseInt(polideportivoId) : polideportivoId;
+    
+    // Si no es un número válido, retornar desconocido
+    if (isNaN(id)) return 'Desconocido';
+    
+    const polideportivo = polideportivos.find(p => {
+      // Asegurarnos de que comparamos números con números
+      const pId = typeof p.id === 'string' ? parseInt(p.id) : p.id;
+      return pId === id;
+    });
+    
+    return polideportivo ? polideportivo.nombre : 'Desconocido';
+  }, [polideportivos]);
+
+  // Función auxiliar para obtener nombre del polideportivo por ID específico
+  const obtenerPolideportivoPorId = useCallback((id) => {
+    if (!id && id !== 0) return null;
+    
+    const idNum = typeof id === 'string' ? parseInt(id) : id;
+    if (isNaN(idNum)) return null;
+    
+    return polideportivos.find(p => {
+      const pId = typeof p.id === 'string' ? parseInt(p.id) : p.id;
+      return pId === idNum;
+    });
+  }, [polideportivos]);
+
   // Cargar datos desde la API
   const fetchData = useCallback(async () => {
     if (!token) {
@@ -173,11 +205,15 @@ export default function AdminPanel({ navigation }) {
         throw new Error('Formato de respuesta inválido para reservas');
       }
       
-      // Enriquecer reservas con información de polideportivo
-      const reservasEnriquecidas = reservasData.data.map(reserva => ({
-        ...reserva,
-        polideportivo_nombre: obtenerNombrePolideportivo(reserva.polideportivo_id)
-      }));
+      // Enriquecer reservas con información de polideportivo usando los polideportivos ya cargados
+      const reservasEnriquecidas = reservasData.data.map(reserva => {
+        const polideportivo = obtenerPolideportivoPorId(reserva.polideportivo_id);
+        return {
+          ...reserva,
+          polideportivo_nombre: polideportivo ? polideportivo.nombre : 'Desconocido',
+          polideportivo_info: polideportivo ? `${polideportivo.nombre} (${polideportivo.direccion})` : 'Desconocido'
+        };
+      });
       
       setReservas(reservasEnriquecidas);
       
@@ -219,7 +255,7 @@ export default function AdminPanel({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, handleAuthError]);
+  }, [token, handleAuthError, obtenerPolideportivoPorId]);
 
   useEffect(() => {
     fetchData();
@@ -265,13 +301,7 @@ export default function AdminPanel({ navigation }) {
     }
   };
 
-  // Obtener nombre del polideportivo
-  const obtenerNombrePolideportivo = (polideportivoId) => {
-    const polideportivo = polideportivos.find(p => p.id === polideportivoId);
-    return polideportivo ? polideportivo.nombre : 'Desconocido';
-  };
-
-  // ========== FUNCIÓN PARA ELIMINAR POLIDEPORTIVO - CON DIAGNÓSTICO ==========
+  // ========== FUNCIÓN PARA ELIMINAR POLIDEPORTIVO ==========
   const eliminarPolideportivo = async (id) => {
     if (!token) {
       alert('No estás autenticado. Por favor, inicia sesión.');
@@ -281,7 +311,6 @@ export default function AdminPanel({ navigation }) {
     const polideportivo = polideportivos.find(p => p.id === id);
     if (!polideportivo) return;
     
-    // Verificar pistas asociadas localmente
     const pistasAsociadas = pistas.filter(pista => pista.polideportivo_id === id);
     if (pistasAsociadas.length > 0) {
       const nombresPistas = pistasAsociadas.map(p => `"${p.nombre}"`).join(', ');
@@ -315,7 +344,6 @@ export default function AdminPanel({ navigation }) {
         }
         
         if (response.status === 404) {
-          // Si dice que no existe, actualizamos el estado local de todos modos
           setPolideportivos(prev => prev.filter(p => p.id !== id));
           alert('⚠️ El polideportivo ya no existe en el servidor. Se ha eliminado del listado local.');
           return;
@@ -324,19 +352,15 @@ export default function AdminPanel({ navigation }) {
         throw new Error(data.error || `Error ${response.status}: No se pudo eliminar el polideportivo`);
       }
 
-      // Si llegamos aquí, la eliminación fue exitosa según el servidor
       if (data.success) {
         console.log(`✅ Eliminación exitosa según el servidor`);
         
-        // Actualizar estado local
         setPolideportivos(prev => prev.filter(p => p.id !== id));
         
-        // Recargar datos después de 1 segundo para verificar
         setTimeout(() => {
           fetchData();
         }, 1000);
         
-        // Actualizar filtro si es necesario
         if (filtroPolideportivo === id.toString()) {
           setFiltroPolideportivo('todos');
         }
@@ -918,56 +942,63 @@ export default function AdminPanel({ navigation }) {
     );
   };
 
-  const renderReservaItem = (item) => (
-    <div className="reserva-card">
-      <div className="reserva-header">
-        <div className="reserva-info-principal">
-          <div className="reserva-nombre-pista">
-            {item.pistaNombre || item.pista}
+  const renderReservaItem = (item) => {
+    // Obtener el nombre del polideportivo usando la función mejorada
+    const polideportivoNombre = item.polideportivo_nombre || obtenerNombrePolideportivo(item.polideportivo_id);
+    
+    return (
+      <div className="reserva-card">
+        <div className="reserva-header">
+          <div className="reserva-info-principal">
+            <div className="reserva-nombre-pista">
+              {item.pistaNombre || item.pista || 'Pista'}
+            </div>
+            <div className="reserva-tipo">
+              {item.pistaTipo || 'Pista'}
+            </div>
           </div>
-          <div className="reserva-tipo">
-            {item.pistaTipo || 'Pista'}
+          <div 
+            className="estado-reserva"
+            style={{ 
+              backgroundColor: 
+                item.estado === 'confirmada' ? '#4CAF50' : 
+                item.estado === 'cancelada' ? '#F44336' : 
+                '#FFA500'
+            }}
+          >
+            <span className="estado-reserva-texto">
+              {item.estado?.charAt(0).toUpperCase() + item.estado?.slice(1) || 'Pendiente'}
+            </span>
           </div>
         </div>
-        <div 
-          className="estado-reserva"
-          style={{ 
-            backgroundColor: 
-              item.estado === 'confirmada' ? '#4CAF50' : 
-              item.estado === 'cancelada' ? '#F44336' : 
-              '#FFA500'
-          }}
+        
+        <div className="reserva-info">
+          <div className="reserva-texto">👤 Usuario: {item.nombre_usuario || 'Desconocido'}</div>
+          <div className="reserva-texto polideportivo-info">
+            🏟️ Polideportivo: <strong>{polideportivoNombre}</strong>
+          </div>
+          <div className="reserva-texto">📅 Fecha: {new Date(item.fecha).toLocaleDateString('es-ES')}</div>
+          <div className="reserva-texto">⏰ Hora: {item.hora_inicio} - {item.hora_fin}</div>
+          <div className="reserva-texto">
+            💰 Precio: {(() => {
+              const precioNum = Number(item.precio);
+              return isNaN(precioNum) ? '--' : precioNum.toFixed(2);
+            })()} €
+          </div>
+          {item.ludoteca && (
+            <div className="reserva-texto reserva-ludoteca">🎯 Incluye ludoteca</div>
+          )}
+        </div>
+        
+        <button
+          className="boton-accion boton-cancelar"
+          onClick={() => cancelarReserva(item.id)}
         >
-          <span className="estado-reserva-texto">
-            {item.estado?.charAt(0).toUpperCase() + item.estado?.slice(1) || 'Pendiente'}
-          </span>
-        </div>
+          ❌ Cancelar
+        </button>
       </div>
-      
-      <div className="reserva-info">
-        <div className="reserva-texto">👤 Usuario: {item.nombre_usuario || 'Desconocido'}</div>
-        <div className="reserva-texto">🏟️ Polideportivo: {item.polideportivo_nombre || obtenerNombrePolideportivo(item.polideportivo_id)}</div>
-        <div className="reserva-texto">📅 Fecha: {new Date(item.fecha).toLocaleDateString('es-ES')}</div>
-        <div className="reserva-texto">⏰ Hora: {item.hora_inicio} - {item.hora_fin}</div>
-        <div className="reserva-texto">
-          💰 Precio: {(() => {
-            const precioNum = Number(item.precio);
-            return isNaN(precioNum) ? '--' : precioNum.toFixed(2);
-          })()} €
-        </div>
-        {item.ludoteca && (
-          <div className="reserva-texto reserva-ludoteca">🎯 Incluye ludoteca</div>
-        )}
-      </div>
-      
-      <button
-        className="boton-accion boton-cancelar"
-        onClick={() => cancelarReserva(item.id)}
-      >
-        ❌ Cancelar
-      </button>
-    </div>
-  );
+    );
+  };
 
   const renderSectionHeader = (section) => (
     <div className="section-header">
