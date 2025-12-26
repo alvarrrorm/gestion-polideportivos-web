@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexto/AuthProvider';
 import './AdminPanel.css';
 
@@ -9,7 +9,7 @@ const RESERVAS_URL = `${API_BASE}/reservas`;
 const POLIDEPORTIVOS_URL = `${API_BASE}/polideportivos`;
 const USUARIOS_URL = `${API_BASE}/usuarios`;
 
-export default function AdminPanel() {
+export default function AdminPanel({ navigation }) {
   const { user, logout } = useAuth();
   const [pistas, setPistas] = useState([]);
   const [reservas, setReservas] = useState([]);
@@ -38,6 +38,13 @@ export default function AdminPanel() {
   const [nuevoPolideportivoTelefono, setNuevoPolideportivoTelefono] = useState('');
   const [modalPistaVisible, setModalPistaVisible] = useState(false);
   const [modalPistaEdicionVisible, setModalPistaEdicionVisible] = useState(false);
+  const [filtroPolideportivo, setFiltroPolideportivo] = useState('todos');
+  
+  // Estados para edición completa de pista
+  const [editarNombrePista, setEditarNombrePista] = useState('');
+  const [editarTipoPista, setEditarTipoPista] = useState('');
+  const [editarPrecioPista, setEditarPrecioPista] = useState('');
+  const [editarDescripcionPista, setEditarDescripcionPista] = useState('');
   
   // Estados para gestión de usuarios
   const [modalPasswordVisible, setModalPasswordVisible] = useState(false);
@@ -46,10 +53,6 @@ export default function AdminPanel() {
   const [polideportivoSeleccionado, setPolideportivoSeleccionado] = useState('');
   const [passwordConfirmacion, setPasswordConfirmacion] = useState('');
   const [cambiandoRol, setCambiandoRol] = useState(false);
-
-  // Estados para filtros
-  const [filtroPolideportivo, setFiltroPolideportivo] = useState('todos');
-  const [filtroPolideportivoReservas, setFiltroPolideportivoReservas] = useState('todos');
 
   // Obtener el nombre del usuario desde el contexto de autenticación
   const usuarioNombre = user?.nombre || user?.usuario || 'Administrador';
@@ -65,17 +68,17 @@ export default function AdminPanel() {
   }, [userRole]);
 
   // Tipos de pistas disponibles
-  const tiposPista = useMemo(() => [
+  const tiposPista = [
     { label: 'Fútbol', value: 'Fútbol' },
     { label: 'Baloncesto', value: 'Baloncesto' },
     { label: 'Tenis', value: 'Tenis' },
     { label: 'Padel', value: 'Padel' },
     { label: 'Voley', value: 'Voley' },
     { label: 'Futbol Sala', value: 'Futbol Sala' }
-  ], []);
+  ];
 
   // Función para obtener headers con autenticación
-  const getHeaders = useCallback(() => {
+  const getHeaders = () => {
     const headers = {
       'Content-Type': 'application/json',
     };
@@ -85,7 +88,7 @@ export default function AdminPanel() {
     }
     
     return headers;
-  }, [token]);
+  };
 
   // Función auxiliar para manejar errores de autenticación
   const handleAuthError = useCallback((errorMessage) => {
@@ -239,7 +242,6 @@ export default function AdminPanel() {
         }
       } catch (usuariosError) {
         console.error('Error al cargar usuarios:', usuariosError);
-        // No lanzamos error aquí para no interrumpir la carga de otros datos
       }
       
     } catch (error) {
@@ -253,57 +255,51 @@ export default function AdminPanel() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, getHeaders, handleAuthError, obtenerPolideportivoPorId]);
+  }, [token, handleAuthError, obtenerPolideportivoPorId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   // Filtrar pistas por polideportivo
-  const pistasFiltradas = useMemo(() => {
-    return filtroPolideportivo === 'todos' 
-      ? pistas 
-      : pistas.filter(pista => pista.polideportivo_id.toString() === filtroPolideportivo);
-  }, [pistas, filtroPolideportivo]);
-
-  // Filtrar reservas por polideportivo
-  const reservasFiltradas = useMemo(() => {
-    return filtroPolideportivoReservas === 'todos' 
-      ? reservas 
-      : reservas.filter(reserva => reserva.polideportivo_id.toString() === filtroPolideportivoReservas);
-  }, [reservas, filtroPolideportivoReservas]);
+  const pistasFiltradas = filtroPolideportivo === 'todos' 
+    ? pistas 
+    : pistas.filter(pista => pista.polideportivo_id.toString() === filtroPolideportivo);
 
   // Agrupar pistas por tipo
-  const pistasPorTipo = useMemo(() => {
-    return pistasFiltradas.reduce((acc, pista) => {
-      const tipo = pista.tipo;
-      if (!acc[tipo]) {
-        acc[tipo] = [];
-      }
-      acc[tipo].push(pista);
-      return acc;
-    }, {});
-  }, [pistasFiltradas]);
+  const pistasPorTipo = pistasFiltradas.reduce((acc, pista) => {
+    const tipo = pista.tipo;
+    if (!acc[tipo]) {
+      acc[tipo] = [];
+    }
+    acc[tipo].push(pista);
+    return acc;
+  }, {});
 
-  const sections = useMemo(() => {
-    return Object.keys(pistasPorTipo).map(tipo => ({
-      title: tipo,
-      data: pistasPorTipo[tipo]
-    }));
-  }, [pistasPorTipo]);
+  const sections = Object.keys(pistasPorTipo).map(tipo => ({
+    title: tipo,
+    data: pistasPorTipo[tipo]
+  }));
 
   // Obtener icono según el tipo de pista
-  const getIconoTipoPista = useCallback((tipo) => {
-    const iconos = {
-      'Fútbol': '⚽',
-      'Baloncesto': '🏀',
-      'Tenis': '🎾',
-      'Padel': '🎯',
-      'Voley': '🏐',
-      'Futbol Sala': '👟'
-    };
-    return iconos[tipo] || '🏟️';
-  }, []);
+  const getIconoTipoPista = (tipo) => {
+    switch (tipo) {
+      case 'Fútbol':
+        return '⚽';
+      case 'Baloncesto':
+        return '🏀';
+      case 'Tenis':
+        return '🎾';
+      case 'Padel':
+        return '🎯';
+      case 'Voley':
+        return '🏐';
+      case 'Futbol Sala':
+        return '👟';
+      default:
+        return '🏟️';
+    }
+  };
 
   // ========== FUNCIÓN PARA ELIMINAR POLIDEPORTIVO ==========
   const eliminarPolideportivo = async (id) => {
@@ -329,12 +325,17 @@ export default function AdminPanel() {
     if (!confirmar) return;
     
     try {
+      console.log(`🔄 Enviando solicitud DELETE para polideportivo ${id}...`);
+      
       const response = await fetch(`${POLIDEPORTIVOS_URL}/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
       });
 
+      console.log(`📊 Respuesta recibida - Status: ${response.status}`);
+      
       const data = await response.json();
+      console.log(`📋 Datos de respuesta:`, data);
 
       if (!response.ok) {
         if (response.status === 409) {
@@ -352,6 +353,8 @@ export default function AdminPanel() {
       }
 
       if (data.success) {
+        console.log(`✅ Eliminación exitosa según el servidor`);
+        
         setPolideportivos(prev => prev.filter(p => p.id !== id));
         
         setTimeout(() => {
@@ -364,6 +367,7 @@ export default function AdminPanel() {
         
         alert(`✅ Polideportivo "${polideportivo.nombre}" eliminado correctamente`);
       } else {
+        console.error('❌ Respuesta del servidor indica éxito false:', data);
         alert(`⚠️ No se pudo eliminar el polideportivo: ${data.error || 'Error desconocido'}`);
       }
       
@@ -722,21 +726,25 @@ export default function AdminPanel() {
   };
 
   // ========== FUNCIONES PARA USUARIOS ==========
-  const obtenerNombreRol = useCallback((rol) => {
-    const roles = {
-      'super_admin': 'Super Administrador',
-      'admin_poli': 'Administrador de Polideportivo',
-      'usuario': 'Usuario Normal'
-    };
-    return roles[rol] || rol;
-  }, []);
+  const obtenerNombreRol = (rol) => {
+    switch(rol) {
+      case 'super_admin':
+        return 'Super Administrador';
+      case 'admin_poli':
+        return 'Administrador de Polideportivo';
+      case 'usuario':
+        return 'Usuario Normal';
+      default:
+        return rol;
+    }
+  };
 
-  const obtenerPolideportivoUsuario = useCallback((usuario) => {
+  const obtenerPolideportivoUsuario = (usuario) => {
     if (usuario.polideportivo_id) {
       return obtenerNombrePolideportivo(usuario.polideportivo_id);
     }
     return 'No asignado';
-  }, [obtenerNombrePolideportivo]);
+  };
 
   const abrirModalCambioRol = (usuario, accion, polideportivoId = null) => {
     setUsuarioEditando(usuario);
@@ -831,7 +839,7 @@ export default function AdminPanel() {
   };
 
   // ========== RENDERIZADO DE COMPONENTES ==========
-  const renderPolideportivoItem = useCallback((item) => {
+  const renderPolideportivoItem = (item) => {
     const pistasEnPolideportivo = pistas.filter(p => p.polideportivo_id === item.id);
     const tienePistas = pistasEnPolideportivo.length > 0;
     
@@ -869,9 +877,9 @@ export default function AdminPanel() {
         </div>
       </div>
     );
-  }, [pistas, eliminarPolideportivo]);
+  };
 
-  const renderPistaItem = useCallback((item) => {
+  const renderPistaItem = (item) => {
     return (
       <div className="pista-card">
         <div className="pista-header">
@@ -932,9 +940,10 @@ export default function AdminPanel() {
         </div>
       </div>
     );
-  }, [getIconoTipoPista, obtenerNombrePolideportivo, toggleMantenimiento, abrirModalEditarPista, abrirModalEditarPrecio, eliminarPista]);
+  };
 
-  const renderReservaItem = useCallback((item) => {
+  const renderReservaItem = (item) => {
+    // Obtener el nombre del polideportivo usando la función mejorada
     const polideportivoNombre = item.polideportivo_nombre || obtenerNombrePolideportivo(item.polideportivo_id);
     
     return (
@@ -989,15 +998,15 @@ export default function AdminPanel() {
         </button>
       </div>
     );
-  }, [obtenerNombrePolideportivo, cancelarReserva]);
+  };
 
-  const renderSectionHeader = useCallback((section) => (
+  const renderSectionHeader = (section) => (
     <div className="section-header">
       <div className="section-header-text">
         {getIconoTipoPista(section.title)} {section.title} ({section.data.length})
       </div>
     </div>
-  ), [getIconoTipoPista]);
+  );
 
   // ========== RENDER CONTENT ==========
   const renderContent = () => {
@@ -1119,54 +1128,23 @@ export default function AdminPanel() {
         return (
           <div className="tab-content">
             <div className="list-header">
-              <div className="seccion-header">
-                <div className="seccion-titulo">
-                  📋 Reservas ({reservasFiltradas.length})
-                </div>
-              </div>
-
-              <div className="filtro-container">
-                <div className="filtro-label">
-                  Filtrar por polideportivo:
-                </div>
-                <div className="filtro-botones">
-                  <button
-                    className={`filtro-boton ${filtroPolideportivoReservas === 'todos' ? 'filtro-boton-activo' : ''}`}
-                    onClick={() => setFiltroPolideportivoReservas('todos')}
-                  >
-                    Todos
-                  </button>
-                  {polideportivos.map(polideportivo => (
-                    <button
-                      key={`reserva-${polideportivo.id}`}
-                      className={`filtro-boton ${filtroPolideportivoReservas === polideportivo.id.toString() ? 'filtro-boton-activo' : ''}`}
-                      onClick={() => setFiltroPolideportivoReservas(polideportivo.id.toString())}
-                    >
-                      {polideportivo.nombre}
-                    </button>
-                  ))}
-                </div>
+              <div className="seccion-titulo">
+                📋 Reservas Activas ({reservas.length})
               </div>
             </div>
             
-            {reservasFiltradas.length === 0 ? (
+            {reservas.length === 0 ? (
               <div className="lista-vacia-container">
                 <div className="lista-vacia">
-                  {filtroPolideportivoReservas === 'todos' 
-                    ? 'No hay reservas activas' 
-                    : 'No hay reservas en este polideportivo'
-                  }
+                  No hay reservas activas
                 </div>
                 <div className="lista-vacia-subtexto">
-                  {filtroPolideportivoReservas === 'todos' 
-                    ? 'Las reservas aparecerán aquí cuando los usuarios realicen reservas' 
-                    : 'Cambia el filtro para ver reservas de otros polideportivos'
-                  }
+                  Las reservas aparecerán aquí cuando los usuarios realicen reservas
                 </div>
               </div>
             ) : (
               <div className="list-content">
-                {reservasFiltradas.map((item) => (
+                {reservas.map((item) => (
                   <div key={item.id.toString()}>
                     {renderReservaItem(item)}
                   </div>
