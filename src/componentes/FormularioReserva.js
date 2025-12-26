@@ -70,7 +70,9 @@ export default function FormularioReserva() {
           hora_inicio: reservaData.hora_inicio,
           hora_fin: reservaData.hora_fin,
           ludoteca: reservaData.ludoteca,
-          estado: reservaData.estado
+          estado: reservaData.estado,
+          // 🎯 MOSTRAR LA FECHA DE CREACIÓN CORRECTA
+          created_at: reservaData.created_at ? formatFechaHoraLocal(reservaData.created_at) : 'No disponible'
         });
         
         if (reservaData) {
@@ -127,6 +129,7 @@ export default function FormularioReserva() {
       )
     : [];
 
+  // 🎯 FUNCIÓN MEJORADA: Formatear fecha desde backend
   const formatearFechaDesdeBackend = (fechaInput) => {
     if (!fechaInput) return '';
     
@@ -136,6 +139,7 @@ export default function FormularioReserva() {
     
     if (typeof fechaInput === 'string' && fechaInput.includes('T')) {
       try {
+        // Extraer solo la parte de la fecha (YYYY-MM-DD)
         return fechaInput.split('T')[0];
       } catch (error) {
         console.error('Error formateando fecha desde backend:', error);
@@ -144,6 +148,36 @@ export default function FormularioReserva() {
     }
     
     return fechaInput || '';
+  };
+
+  // 🎯 NUEVA FUNCIÓN: Formatear fecha/hora completa
+  const formatFechaHoraLocal = (fechaISO) => {
+    if (!fechaISO) return '';
+    
+    try {
+      // Crear fecha a partir de ISO string
+      const fecha = new Date(fechaISO);
+      
+      // Verificar si la fecha es válida
+      if (isNaN(fecha.getTime())) {
+        console.warn('Fecha inválida recibida:', fechaISO);
+        return fechaISO;
+      }
+      
+      // Formatear en zona horaria local del cliente
+      return fecha.toLocaleString('es-ES', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+    } catch (error) {
+      console.error('Error formateando fecha/hora:', error, 'Input:', fechaISO);
+      return fechaISO; // Devolver original si hay error
+    }
   };
 
   const calcularPrecio = () => {
@@ -622,6 +656,7 @@ export default function FormularioReserva() {
       console.log('📊 Datos del formulario:', formData);
       console.log('👤 Usuario info:', { userId, usuario, dni });
       console.log('💰 Precio calculado:', precioFinal);
+      console.log('⏰ Hora local del cliente:', new Date().toLocaleString('es-ES'));
 
       // 🆕 USAR LA NUEVA RUTA ESPECÍFICA PARA USUARIOS
       let url = 'https://tfgv2-production.up.railway.app/api/reservas';
@@ -644,6 +679,7 @@ export default function FormularioReserva() {
         console.log('🔄 Enviando datos de modificación:', datosModificacion);
         console.log('🔗 URL:', url);
         console.log('🔑 Headers:', getHeaders());
+        console.log('⏰ Fecha/hora envio:', new Date().toISOString());
         
         const response = await fetch(url, {
           method: method,
@@ -681,6 +717,7 @@ export default function FormularioReserva() {
         }
 
         console.log(`✅ Reserva actualizada exitosamente:`, data.data);
+        console.log('📅 Fecha/hora actualización (local):', formatFechaHoraLocal(data.data.fecha_modificacion));
 
         const mensajeExito = data.cambioPrecio 
           ? `Reserva #${reservaParaEditar.id} actualizada correctamente. El precio se ha ajustado a ${data.precioNuevo?.toFixed(2) || precioFinal.toFixed(2)} €.`
@@ -710,6 +747,7 @@ export default function FormularioReserva() {
       console.log('📤 Enviando datos de nueva reserva:', reservaData);
       console.log('🔗 URL:', url);
       console.log('🔑 Headers:', getHeaders());
+      console.log('⏰ Fecha/hora envio:', new Date().toISOString());
 
       const response = await fetch(url, {
         method: method,
@@ -747,6 +785,7 @@ export default function FormularioReserva() {
       }
 
       console.log(`✅ Reserva creada exitosamente:`, data.data);
+      console.log('📅 Fecha/hora creación (local):', formatFechaHoraLocal(data.data.created_at));
       
       window.location.href = `/resumen-reserva?reserva=${encodeURIComponent(JSON.stringify(data.data))}&mensaje=${encodeURIComponent('Reserva creada exitosamente')}`;
 
@@ -840,6 +879,15 @@ export default function FormularioReserva() {
             💰 El precio se ha actualizado por los cambios realizados
           </div>
         )}
+        
+        {/* 🎯 Mostrar información de fecha/hora de creación si estamos en modo edición */}
+        {modoEdicion && reservaParaEditar?.created_at && (
+          <div className="info-creacion">
+            <small>
+              📅 Creada el: {formatFechaHoraLocal(reservaParaEditar.created_at)}
+            </small>
+          </div>
+        )}
       </div>
     );
   };
@@ -881,6 +929,9 @@ export default function FormularioReserva() {
               <small>
                 Reserva actual: #{reservaParaEditar.id} | Estado: {reservaParaEditar.estado} | 
                 Ludoteca: {reservaParaEditar.ludoteca ? 'Sí' : 'No'}
+                {reservaParaEditar.created_at && (
+                  <> | 📅 Creada: {formatFechaHoraLocal(reservaParaEditar.created_at)}</>
+                )}
               </small>
             </div>
           )}
@@ -925,6 +976,11 @@ export default function FormularioReserva() {
               <label className="form-label">Reserva actual</label>
               <div className="reserva-info">
                 #{reservaParaEditar.id} • {formatearFechaDesdeBackend(reservaParaEditar.fecha)} • {reservaParaEditar.hora_inicio} - {reservaParaEditar.hora_fin}
+                {reservaParaEditar.created_at && (
+                  <div className="fecha-creacion-info">
+                    <small>📅 Creada: {formatFechaHoraLocal(reservaParaEditar.created_at)}</small>
+                  </div>
+                )}
               </div>
             </div>
           )}
