@@ -359,7 +359,7 @@ export default function Reservas() {
     if (!token || reservasActivas.length === 0) return;
     
     const ahora = new Date();
-    const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000)); // 1 hora atrás
+    const unaHoraAtras = new Date(ahora.getTime() - ( 60 * 1000)); // 1 hora atrás
     
     console.log('⏰ Verificando cancelación automática de reservas (1 hora)...');
     
@@ -427,7 +427,7 @@ export default function Reservas() {
     // Configurar intervalo para verificar cada 5 minutos
     intervaloRef.current = setInterval(() => {
       verificarCancelacionAutomatica();
-    }, 5 * 60 * 1000); // 5 minutos
+    }, 30 * 1000); // 5 minutos
     
     // Verificar inmediatamente al cargar
     verificarCancelacionAutomatica();
