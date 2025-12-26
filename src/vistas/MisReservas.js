@@ -704,11 +704,7 @@ export default function Reservas() {
           <p className="subtitulo">
             Gestiona tus próximas reservas y consulta el historial
           </p>
-          <div className="user-info">
-            <small>Bienvenido, {usuario}</small>
-            <small>ID de usuario: {userId}</small>
-            <small>Total reservas: {totalReservas}</small>
-          </div>
+          
         </div>
       </div>
 
