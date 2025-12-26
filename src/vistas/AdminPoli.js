@@ -758,52 +758,7 @@ export default function AdminPoli() {
     }
   }, [token, handleAuthError]);
 
-  // Cargar estadísticas
-  const cargarEstadisticas = useCallback(async () => {
-    if (!token) {
-      console.error('❌ Faltan token para cargar estadísticas');
-      return;
-    }
 
-    try {
-      setLoading(prev => ({ ...prev, estadisticas: true }));
-
-      const response = await fetch(`${API_URL}/admin-poli/estadisticas`, {
-        headers: getHeaders()
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log('ℹ️ No se encontraron estadísticas');
-          setEstadisticas(null);
-          return;
-        }
-
-        let errorMessage = `Error ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (jsonError) {
-          const textError = await response.text();
-          errorMessage = textError || errorMessage;
-        }
-
-        if (handleAuthError(errorMessage)) return;
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        setEstadisticas(data.data);
-      }
-
-    } catch (error) {
-      console.error('❌ Error cargando estadísticas:', error.message);
-    } finally {
-      setLoading(prev => ({ ...prev, estadisticas: false }));
-    }
-  }, [token, handleAuthError]);
 
   // Cargar todos los datos
   const cargarTodosLosDatos = useCallback(async () => {
