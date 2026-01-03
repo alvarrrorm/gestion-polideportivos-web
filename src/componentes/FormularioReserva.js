@@ -180,6 +180,37 @@ export default function FormularioReserva() {
     }
   };
 
+  // 🎯 FUNCIÓN PARA VERIFICAR SI UNA HORA YA PASÓ (PARA HOY)
+  const horaYaPaso = (horaStr) => {
+    if (!esHoy) return false; // Solo verificar si es hoy
+    
+    const horaSeleccionada = parseInt(horaStr.split(':')[0], 10);
+    const minutosSeleccionados = parseInt(horaStr.split(':')[1] || '0', 10);
+    
+    // Convertir a minutos totales para comparación precisa
+    const minutosActualesTotales = horaActual * 60 + minutosActuales;
+    const minutosSeleccionadosTotales = horaSeleccionada * 60 + minutosSeleccionados;
+    
+    return minutosSeleccionadosTotales < minutosActualesTotales;
+  };
+
+  // 🎯 FUNCIÓN PARA VERIFICAR SI UNA HORA ES MUY PRÓXIMA (MENOS DE 30 MINUTOS)
+  const horaMuyProxima = (horaStr) => {
+    if (!esHoy) return false; // Solo verificar si es hoy
+    
+    const horaSeleccionada = parseInt(horaStr.split(':')[0], 10);
+    const minutosSeleccionados = parseInt(horaStr.split(':')[1] || '0', 10);
+    
+    // Convertir a minutos totales
+    const minutosActualesTotales = horaActual * 60 + minutosActuales;
+    const minutosSeleccionadosTotales = horaSeleccionada * 60 + minutosSeleccionados;
+    
+    // Verificar si falta menos de 30 minutos para la hora seleccionada
+    const minutosFaltantes = minutosSeleccionadosTotales - minutosActualesTotales;
+    
+    return minutosFaltantes >= 0 && minutosFaltantes < 30;
+  };
+
   const calcularPrecio = () => {
     if (!formData.pista || !formData.horaInicio || !formData.horaFin) {
       return 0;
@@ -277,7 +308,7 @@ export default function FormularioReserva() {
     return bloques;
   };
 
-  // 🆕 FUNCIÓN MEJORADA: Obtener horas de inicio disponibles
+  // 🎯 FUNCIÓN MEJORADA: Obtener horas de inicio disponibles (CON VALIDACIÓN DE HORAS PASADAS)
   const getHorasInicioDisponibles = () => {
     if (!formData.pista || !formData.fecha) {
       return horasFiltradas;
@@ -288,6 +319,16 @@ export default function FormularioReserva() {
     
     return horasFiltradas.filter(horaInicio => {
       const horaInicioNum = parseInt(horaInicio.split(':')[0], 10);
+      
+      // 🎯 VERIFICAR SI LA HORA YA PASÓ (PARA HOY)
+      if (esHoy && horaYaPaso(horaInicio)) {
+        return false;
+      }
+      
+      // 🎯 VERIFICAR SI LA HORA ES MUY PRÓXIMA (MENOS DE 30 MINUTOS)
+      if (esHoy && horaMuyProxima(horaInicio)) {
+        return false;
+      }
       
       // Verificar si la hora está en un bloque ocupado
       const enBloqueOcupado = bloquesOcupados.some(bloque => 
@@ -303,6 +344,11 @@ export default function FormularioReserva() {
         const horaFinNum = parseInt(horaFin.split(':')[0], 10);
         if (horaFinNum <= horaInicioNum) return false;
         
+        // 🎯 VERIFICAR SI LA HORA FIN YA PASÓ (PARA HOY)
+        if (esHoy && horaYaPaso(horaFin)) {
+          return false;
+        }
+        
         // Verificar que todo el rango esté disponible
         for (let h = horaInicioNum; h < horaFinNum; h++) {
           const horaIntermedia = `${h.toString().padStart(2, '0')}:00`;
@@ -317,7 +363,7 @@ export default function FormularioReserva() {
     });
   };
 
-  // 🆕 FUNCIÓN MEJORADA: Obtener horas de fin disponibles
+  // 🎯 FUNCIÓN MEJORADA: Obtener horas de fin disponibles (CON VALIDACIÓN DE HORAS PASADAS)
   const getHorasFinDisponibles = () => {
     if (!formData.pista || !formData.fecha || !formData.horaInicio) {
       return [];
@@ -329,7 +375,14 @@ export default function FormularioReserva() {
 
     return horasFiltradas.filter(horaFin => {
       const horaFinNum = parseInt(horaFin.split(':')[0], 10);
+      
+      // La hora de fin debe ser mayor que la de inicio
       if (horaFinNum <= horaInicioNum) return false;
+      
+      // 🎯 VERIFICAR SI LA HORA FIN YA PASÓ (PARA HOY)
+      if (esHoy && horaYaPaso(horaFin)) {
+        return false;
+      }
 
       // Verificar que todo el rango esté disponible
       for (let h = horaInicioNum; h < horaFinNum; h++) {
@@ -483,7 +536,7 @@ export default function FormularioReserva() {
     return () => clearTimeout(timeoutId);
   }, [formData.fecha, formData.polideportivo, token]);
 
-  // Validar formulario
+  // 🎯 VALIDACIÓN COMPLETA DEL FORMULARIO (CON VALIDACIÓN DE HORAS PASADAS)
   useEffect(() => {
     const nuevosErrores = {};
 
@@ -493,23 +546,57 @@ export default function FormularioReserva() {
     if (!formData.horaInicio) nuevosErrores.horaInicio = 'Selecciona hora de inicio';
     if (!formData.horaFin) nuevosErrores.horaFin = 'Selecciona hora de fin';
 
+    // Validar fecha
     if (formData.fecha && formData.fecha < hoy) {
       nuevosErrores.fecha = 'No puedes reservar en fechas pasadas';
     }
 
-    if (formData.horaInicio && formData.horaFin && formData.horaFin <= formData.horaInicio) {
-      nuevosErrores.horaFin = 'La hora de fin debe ser mayor que la de inicio';
-    }
+    // Validar horas (solo si tenemos fecha y hora)
+    if (formData.horaInicio && formData.horaFin) {
+      // Verificar que hora fin sea mayor que hora inicio
+      const hi = parseInt(formData.horaInicio.split(':')[0], 10);
+      const hf = parseInt(formData.horaFin.split(':')[0], 10);
+      
+      if (hf <= hi) {
+        nuevosErrores.horaFin = 'La hora de fin debe ser mayor que la de inicio';
+      }
 
-    if (formData.fecha === hoy && formData.horaInicio) {
-      const horaInicioNum = parseInt(formData.horaInicio.split(":")[0], 10);
-      if (horaInicioNum < horaActual) {
-        nuevosErrores.horaInicio = 'La hora seleccionada ya pasó';
-      } else if (horaInicioNum === horaActual && minutosActuales >= 30) {
-        nuevosErrores.horaInicio = 'La hora seleccionada es muy próxima. Elige una hora posterior.';
+      // 🎯 VERIFICAR SI ES HOY Y LAS HORAS YA PASARON
+      if (esHoy) {
+        const hiNum = parseInt(formData.horaInicio.split(':')[0], 10);
+        const hfNum = parseInt(formData.horaFin.split(':')[0], 10);
+        const minutosHi = parseInt(formData.horaInicio.split(':')[1] || '0', 10);
+        const minutosHf = parseInt(formData.horaFin.split(':')[1] || '0', 10);
+        
+        // Convertir a minutos totales
+        const minutosActualesTotales = horaActual * 60 + minutosActuales;
+        const minutosHiTotales = hiNum * 60 + minutosHi;
+        const minutosHfTotales = hfNum * 60 + minutosHf;
+        
+        // Verificar si la hora de inicio ya pasó
+        if (minutosHiTotales < minutosActualesTotales) {
+          nuevosErrores.horaInicio = 'La hora de inicio seleccionada ya pasó. Elige una hora futura.';
+        }
+        
+        // Verificar si la hora de inicio es muy próxima (menos de 30 minutos)
+        const minutosFaltantesParaInicio = minutosHiTotales - minutosActualesTotales;
+        if (minutosFaltantesParaInicio >= 0 && minutosFaltantesParaInicio < 30) {
+          nuevosErrores.horaInicio = 'La hora de inicio es muy próxima. Debes reservar con al menos 30 minutos de antelación.';
+        }
+        
+        // Verificar si la hora de fin ya pasó
+        if (minutosHfTotales < minutosActualesTotales) {
+          nuevosErrores.horaFin = 'La hora de fin seleccionada ya pasó. Elige una hora futura.';
+        }
+        
+        // Verificar que la hora de fin no sea anterior a la hora de inicio
+        if (minutosHfTotales <= minutosHiTotales) {
+          nuevosErrores.horaFin = 'La hora de fin debe ser posterior a la hora de inicio';
+        }
       }
     }
 
+    // Validar disponibilidad de la pista
     if (formData.pista && formData.fecha && formData.horaInicio && formData.horaFin) {
       const horasOcupadas = obtenerHorasOcupadas();
       const horaInicioNum = parseInt(formData.horaInicio.split(':')[0], 10);
@@ -540,7 +627,7 @@ export default function FormularioReserva() {
     }
 
     setErrores(nuevosErrores);
-  }, [formData, reservasExistentes, hoy, horaActual, minutosActuales, userId, modoEdicion, reservaParaEditar]);
+  }, [formData, reservasExistentes, hoy, horaActual, minutosActuales, esHoy, userId, modoEdicion, reservaParaEditar]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -609,6 +696,43 @@ export default function FormularioReserva() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // 🎯 VALIDACIÓN EXTRA EN EL SUBMIT (PARA SEGURIDAD)
+    const ahora = new Date();
+    const hoyStr = ahora.toISOString().split("T")[0];
+    
+    if (formData.fecha === hoyStr) {
+      const horaActualNum = ahora.getHours();
+      const minutosActualesNum = ahora.getMinutes();
+      const minutosActualesTotales = horaActualNum * 60 + minutosActualesNum;
+      
+      if (formData.horaInicio) {
+        const hiNum = parseInt(formData.horaInicio.split(':')[0], 10);
+        const minutosHi = parseInt(formData.horaInicio.split(':')[1] || '0', 10);
+        const minutosHiTotales = hiNum * 60 + minutosHi;
+        
+        if (minutosHiTotales < minutosActualesTotales) {
+          mostrarAlerta('Hora inválida', 'La hora de inicio seleccionada ya pasó. Por favor, elige una hora futura.');
+          return;
+        }
+        
+        if (minutosHiTotales - minutosActualesTotales < 30) {
+          mostrarAlerta('Tiempo insuficiente', 'Debes reservar con al menos 30 minutos de antelación. Por favor, elige una hora posterior.');
+          return;
+        }
+      }
+      
+      if (formData.horaFin) {
+        const hfNum = parseInt(formData.horaFin.split(':')[0], 10);
+        const minutosHf = parseInt(formData.horaFin.split(':')[1] || '0', 10);
+        const minutosHfTotales = hfNum * 60 + minutosHf;
+        
+        if (minutosHfTotales < minutosActualesTotales) {
+          mostrarAlerta('Hora inválida', 'La hora de fin seleccionada ya pasó. Por favor, elige una hora futura.');
+          return;
+        }
+      }
+    }
+    
     if (Object.keys(errores).length > 0) {
       mostrarAlerta('Error', 'Por favor, corrige los errores antes de continuar');
       return;
@@ -657,6 +781,9 @@ export default function FormularioReserva() {
       console.log('👤 Usuario info:', { userId, usuario, dni });
       console.log('💰 Precio calculado:', precioFinal);
       console.log('⏰ Hora local del cliente:', new Date().toLocaleString('es-ES'));
+      console.log('📅 Fecha seleccionada:', formData.fecha);
+      console.log('🕐 Es hoy?:', esHoy);
+      console.log('🕐 Hora actual:', `${horaActual}:${minutosActuales}`);
 
       // 🆕 USAR LA NUEVA RUTA ESPECÍFICA PARA USUARIOS
       let url = 'https://tfgv2-production.up.railway.app/api/reservas';
@@ -1087,7 +1214,7 @@ export default function FormularioReserva() {
               <option value="">
                 {horasInicioDisponibles.length > 0 
                   ? "Selecciona hora" 
-                  : "No hay horas disponibles"}
+                  : esHoy ? "No hay horas disponibles para hoy" : "No hay horas disponibles"}
               </option>
               {horasInicioDisponibles.map(hora => (
                 <option key={hora} value={hora}>{hora}</option>
@@ -1095,7 +1222,14 @@ export default function FormularioReserva() {
             </select>
             {horasInicioDisponibles.length === 0 && formData.pista && formData.fecha && (
               <div className="no-horas-text">
-                Todas las horas están ocupadas para esta fecha y pista
+                {esHoy 
+                  ? `Todas las horas disponibles para hoy ya pasaron. Solo puedes reservar horas futuras.`
+                  : `Todas las horas están ocupadas para esta fecha y pista`}
+              </div>
+            )}
+            {esHoy && (
+              <div className="info-hora-actual">
+                <small>🕐 Hora actual: {`${horaActual}:${minutosActuales.toString().padStart(2, '0')}`}</small>
               </div>
             )}
           </div>
@@ -1112,7 +1246,7 @@ export default function FormularioReserva() {
               <option value="">
                 {!formData.horaInicio ? "Primero selecciona hora inicio" :
                  horasFinDisponibles.length > 0 ? "Selecciona hora" : 
-                 "No hay horas disponibles para esta hora inicio"}
+                 esHoy ? "No hay horas futuras disponibles" : "No hay horas disponibles para esta hora inicio"}
               </option>
               {horasFinDisponibles.map(hora => (
                 <option key={hora} value={hora}>{hora}</option>
@@ -1120,7 +1254,9 @@ export default function FormularioReserva() {
             </select>
             {horasFinDisponibles.length === 0 && formData.horaInicio && (
               <div className="no-horas-text">
-                No hay horas de fin disponibles para esta hora de inicio
+                {esHoy 
+                  ? `No hay horas futuras disponibles para esta hora de inicio`
+                  : `No hay horas de fin disponibles para esta hora de inicio`}
               </div>
             )}
           </div>
