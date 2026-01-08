@@ -261,25 +261,52 @@ export default function AdminPanel({ navigation }) {
     fetchData();
   }, [fetchData]);
 
-  // Filtrar pistas por polideportivo
+  // CORRECCIÓN: Filtrar pistas por polideportivo y organizar por tipo
   const pistasFiltradas = filtroPolideportivo === 'todos' 
     ? pistas 
-    : pistas.filter(pista => pista.polideportivo_id.toString() === filtroPolideportivo);
+    : pistas.filter(pista => {
+        const pistaId = typeof pista.polideportivo_id === 'string' 
+          ? parseInt(pista.polideportivo_id) 
+          : pista.polideportivo_id;
+        const filtroId = typeof filtroPolideportivo === 'string' 
+          ? parseInt(filtroPolideportivo) 
+          : filtroPolideportivo;
+        return pistaId === filtroId;
+      });
 
-  // Agrupar pistas por tipo
-  const pistasPorTipo = pistasFiltradas.reduce((acc, pista) => {
-    const tipo = pista.tipo;
-    if (!acc[tipo]) {
-      acc[tipo] = [];
+  // Agrupar pistas por tipo Y polideportivo
+  const pistasAgrupadas = pistasFiltradas.reduce((acc, pista) => {
+    const tipo = pista.tipo || 'Sin tipo';
+    const poliId = pista.polideportivo_id;
+    const poliNombre = obtenerNombrePolideportivo(poliId);
+    
+    // Crear clave única: tipo + polideportivo
+    const clave = `${tipo}_${poliId}`;
+    
+    if (!acc[clave]) {
+      acc[clave] = {
+        tipo: tipo,
+        polideportivoId: poliId,
+        polideportivoNombre: poliNombre,
+        pistas: []
+      };
     }
-    acc[tipo].push(pista);
+    
+    acc[clave].pistas.push(pista);
     return acc;
   }, {});
 
-  const sections = Object.keys(pistasPorTipo).map(tipo => ({
-    title: tipo,
-    data: pistasPorTipo[tipo]
-  }));
+  // Convertir objeto agrupado a array y ordenar
+  const seccionesAgrupadas = Object.values(pistasAgrupadas)
+    .sort((a, b) => {
+      // Primero por tipo
+      if (a.tipo < b.tipo) return -1;
+      if (a.tipo > b.tipo) return 1;
+      // Luego por polideportivo
+      if (a.polideportivoNombre < b.polideportivoNombre) return -1;
+      if (a.polideportivoNombre > b.polideportivoNombre) return 1;
+      return 0;
+    });
 
   // Obtener icono según el tipo de pista
   const getIconoTipoPista = (tipo) => {
@@ -543,6 +570,7 @@ export default function AdminPanel({ navigation }) {
     setModalPistaEdicionVisible(true);
   };
 
+  // CORRECCIÓN: Función para guardar cambios de pista - Arreglar error 500
   const guardarCambiosPista = async () => {
     if (!pistaEditando || !token) return;
     
@@ -563,19 +591,29 @@ export default function AdminPanel({ navigation }) {
     }
     
     try {
+      // Preparar datos para enviar
+      const datosActualizacion = {
+        nombre: editarNombrePista.trim(),
+        tipo: editarTipoPista,
+        precio: precioNum,
+        descripcion: editarDescripcionPista.trim() || null, // Enviar null si está vacío
+        disponible: pistaEditando.disponible
+      };
+      
+      console.log('📤 Datos enviados para actualizar pista:', datosActualizacion);
+
       const response = await fetch(`${PISTAS_URL}/${pistaEditando.id}`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({
-          nombre: editarNombrePista.trim(),
-          tipo: editarTipoPista,
-          precio: precioNum,
-          descripcion: editarDescripcionPista.trim() || null,
-          disponible: pistaEditando.disponible
-        })
+        body: JSON.stringify(datosActualizacion)
       });
 
       const responseData = await response.json();
+      
+      console.log('📥 Respuesta del servidor:', {
+        status: response.status,
+        data: responseData
+      });
 
       if (response.status === 409) {
         setErrorNombreRepetido('⚠️ Ya existe una pista con ese nombre en este polideportivo.');
@@ -583,10 +621,16 @@ export default function AdminPanel({ navigation }) {
       }
 
       if (!response.ok) {
-        throw new Error(responseData.error || `Error ${response.status}: No se pudo actualizar la pista`);
+        // Mostrar más información sobre el error
+        const errorMsg = responseData.error || 
+                        responseData.message || 
+                        `Error ${response.status}: No se pudo actualizar la pista`;
+        console.error('❌ Error detallado:', responseData);
+        throw new Error(errorMsg);
       }
       
       if (responseData.success && responseData.data) {
+        // Actualizar estado local
         setPistas(prev => prev.map(p => 
           p.id === pistaEditando.id ? {
             ...responseData.data,
@@ -606,7 +650,23 @@ export default function AdminPanel({ navigation }) {
       
     } catch (error) {
       console.error('Error actualizando pista:', error);
-      alert(`❌ Error: ${error.message}`);
+      
+      // Mensaje más específico
+      let mensajeError = 'Error interno del servidor al actualizar la pista';
+      
+      if (error.message.includes('500')) {
+        mensajeError = 'Error 500: El servidor encontró un problema interno.';
+        mensajeError += '\nPosibles causas:';
+        mensajeError += '\n1. La descripción es demasiado larga';
+        mensajeError += '\n2. Problema con la base de datos';
+        mensajeError += '\n3. Error en el servidor backend';
+      } else if (error.message.includes('network')) {
+        mensajeError = 'Error de red. Verifica tu conexión a internet.';
+      } else {
+        mensajeError = error.message;
+      }
+      
+      alert(`❌ ${mensajeError}`);
     }
   };
 
@@ -1000,10 +1060,26 @@ export default function AdminPanel({ navigation }) {
     );
   };
 
-  const renderSectionHeader = (section) => (
-    <div className="section-header">
-      <div className="section-header-text">
-        {getIconoTipoPista(section.title)} {section.title} ({section.data.length})
+  // CORRECCIÓN: Nuevo render para secciones agrupadas
+  const renderSeccionAgrupada = (seccion) => (
+    <div className="seccion-agrupada">
+      <div className="seccion-agrupada-header">
+        <div className="seccion-agrupada-titulo">
+          {getIconoTipoPista(seccion.tipo)} {seccion.tipo} 
+          <span className="seccion-agrupada-subtitulo">
+            en {seccion.polideportivoNombre}
+          </span>
+        </div>
+        <div className="seccion-agrupada-contador">
+          ({seccion.pistas.length} {seccion.pistas.length === 1 ? 'pista' : 'pistas'})
+        </div>
+      </div>
+      <div className="seccion-agrupada-contenido">
+        {seccion.pistas.map((pista) => (
+          <div key={pista.id}>
+            {renderPistaItem(pista)}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1108,15 +1184,10 @@ export default function AdminPanel({ navigation }) {
                 </div>
               </div>
             ) : (
-              <div className="list-content">
-                {sections.map((section, index) => (
-                  <div key={`section-${index}`}>
-                    {renderSectionHeader(section)}
-                    {section.data.map((pista) => (
-                      <div key={pista.id}>
-                        {renderPistaItem(pista)}
-                      </div>
-                    ))}
+              <div className="list-content agrupado">
+                {seccionesAgrupadas.map((seccion, index) => (
+                  <div key={`seccion-${index}`}>
+                    {renderSeccionAgrupada(seccion)}
                   </div>
                 ))}
               </div>
@@ -1520,6 +1591,7 @@ export default function AdminPanel({ navigation }) {
               value={editarDescripcionPista}
               onChange={(e) => setEditarDescripcionPista(e.target.value)}
               rows="3"
+              maxLength="500"
             />
 
             <div className="modal-buttons">
