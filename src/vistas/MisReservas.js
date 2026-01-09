@@ -18,6 +18,9 @@ export default function Reservas() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [cancelando, setCancelando] = useState({});
   
+  // NUEVO: Estado para controlar si el historial está desplegado
+  const [historialDesplegado, setHistorialDesplegado] = useState(false);
+  
   // Referencia para el intervalo de verificación automática
   const intervaloRef = useRef(null);
 
@@ -122,14 +125,6 @@ export default function Reservas() {
         
         // 🎯 Verificar si estamos a menos de 2 horas de la reserva
         const esMenosDe2HorasAntes = ahora >= dosHorasAntes;
-        
-        console.log(`⏰ Verificación cancelación reserva ${reserva.id}:`, {
-          ahora: ahora.toString(),
-          inicioReserva: fechaInicioReserva.toString(),
-          dosHorasAntes: dosHorasAntes.toString(),
-          diferenciaHoras: (fechaInicioReserva.getTime() - ahora.getTime()) / (1000 * 60 * 60),
-          puedeCancelar: !esMenosDe2HorasAntes
-        });
         
         // Si estamos a menos de 2 horas, NO se puede cancelar
         return !esMenosDe2HorasAntes;
@@ -297,30 +292,6 @@ export default function Reservas() {
     const processReservas = (todasReservas) => {
       console.log('🔧 Procesando reservas recibidas:', todasReservas.length);
       
-      // DEBUG: Mostrar todas las reservas recibidas
-      todasReservas.forEach((reserva, index) => {
-        console.log(`📋 Reserva ${index + 1}:`, {
-          id: reserva.id,
-          estado: reserva.estado,
-          fecha: reserva.fecha,
-          hora_inicio: reserva.hora_inicio,
-          pistaNombre: reserva.pistaNombre || reserva.pistas?.nombre,
-          pistaTipo: reserva.pistaTipo || reserva.pistas?.tipo,
-          polideportivo_nombre: reserva.polideportivo_nombre || reserva.polideportivos?.nombre,
-          precio: reserva.precio,
-          usuario_id: reserva.usuario_id,
-          hora_creacion: reserva.hora_creacion,
-          created_at: reserva.created_at
-        });
-      });
-      
-      // 🎯 OBTENER HORA ACTUAL CORRECTAMENTE (local del navegador)
-      const ahora = new Date();
-      console.log('⏰ Fecha/hora actual LOCAL (navegador):', ahora.toString());
-      console.log('⏰ Fecha/hora actual UTC:', ahora.toISOString());
-      console.log('🌍 Zona horaria del navegador:', Intl.DateTimeFormat().resolvedOptions().timeZone);
-      console.log('🕒 Diferencia UTC (horas):', ahora.getTimezoneOffset() / 60);
-      
       // Inicializar arrays
       const activas = [];
       const confirmadas = [];
@@ -348,7 +319,6 @@ export default function Reservas() {
             const minutos = parseInt(minutoStr || '0');
             
             // 🎯 IMPORTANTE: Crear fecha en zona horaria LOCAL (no UTC)
-            // Esto asegura que 08:00 en España sea 08:00, no 07:00 UTC
             fechaReservaLocal = new Date(anio, mes - 1, dia, horas, minutos, 0);
             
             // Verificar si la fecha es válida
@@ -358,17 +328,8 @@ export default function Reservas() {
               return;
             }
             
-            console.log(`Reserva ${reserva.id}:`, {
-              fechaOriginal: reserva.fecha,
-              horaOriginal: reserva.hora_inicio,
-              fechaReservaLocal: fechaReservaLocal.toString(),
-              fechaReservaISO: fechaReservaLocal.toISOString(),
-              ahoraLocal: ahora.toString(),
-              ahoraISO: ahora.toISOString(),
-              esFutura: fechaReservaLocal > ahora, // Usar > en lugar de >=
-              diferenciaMinutos: (fechaReservaLocal.getTime() - ahora.getTime()) / (1000 * 60),
-              estado: reserva.estado
-            });
+            // 🎯 OBTENER HORA ACTUAL CORRECTAMENTE
+            const ahora = new Date();
             
             // 🎯 CLASIFICAR LA RESERVA CON LÓGICA CORREGIDA
             if (reserva.estado === 'cancelada') {
@@ -400,54 +361,9 @@ export default function Reservas() {
         }
       });
       
-      console.log('✅ Reservas activas encontradas:', activas.length);
       setReservasActivas(activas);
-
-      console.log('✅ Reservas confirmadas encontradas:', confirmadas.length);
       setReservasConfirmadas(confirmadas);
-
-      console.log('📜 Reservas en historial:', historial.length);
       setReservasHistorial(historial);
-      
-      // DEBUG: Resumen final
-      console.log('📊 RESUMEN FINAL:');
-      console.log('   Activas:', activas.length);
-      console.log('   Confirmadas:', confirmadas.length);
-      console.log('   Historial:', historial.length);
-      console.log('   Total procesadas:', todasReservas.length);
-      
-      // Mostrar ejemplos de clasificación
-      if (todasReservas.length > 0) {
-        console.log('📝 EJEMPLOS DE CLASIFICACIÓN:');
-        const ejemploActiva = activas[0];
-        const ejemploConfirmada = confirmadas[0];
-        const ejemploHistorial = historial[0];
-        
-        if (ejemploActiva) {
-          console.log('   Activa:', {
-            id: ejemploActiva.id,
-            fecha: ejemploActiva.fecha,
-            hora: ejemploActiva.hora_inicio,
-            estado: ejemploActiva.estado
-          });
-        }
-        if (ejemploConfirmada) {
-          console.log('   Confirmada:', {
-            id: ejemploConfirmada.id,
-            fecha: ejemploConfirmada.fecha,
-            hora: ejemploConfirmada.hora_inicio,
-            estado: ejemploConfirmada.estado
-          });
-        }
-        if (ejemploHistorial) {
-          console.log('   Historial:', {
-            id: ejemploHistorial.id,
-            fecha: ejemploHistorial.fecha,
-            hora: ejemploHistorial.hora_inicio,
-            estado: ejemploHistorial.estado
-          });
-        }
-      }
     };
 
     if (token) {
@@ -466,14 +382,6 @@ export default function Reservas() {
     
     // 🎯 Obtener hora actual CORRECTA (local del navegador)
     const ahora = new Date();
-    console.log('🔄 Verificación automática - Hora actual:', ahora.toString());
-    
-    // 🎯 Calcular 1 hora atrás usando la misma referencia de tiempo
-    const unaHoraAtras = new Date(ahora.getTime() - (60 * 60 * 1000));
-    
-    console.log('⏰ Verificando cancelación automática de reservas (1 hora)...');
-    console.log('   Hora actual:', ahora.toString());
-    console.log('   1 hora atrás:', unaHoraAtras.toString());
     
     // Filtrar reservas pendientes que tengan más de 1 hora desde su creación
     const reservasParaCancelar = reservasActivas.filter(reserva => {
@@ -513,20 +421,10 @@ export default function Reservas() {
         }
         
         const tiempoTranscurrido = ahora.getTime() - fechaCreacion.getTime();
-        const minutosTranscurridos = Math.floor(tiempoTranscurrido / (1000 * 60));
-        const horasTranscurridas = minutosTranscurridos / 60;
-        
-        console.log(`Reserva ${reserva.id}: Creada el ${fechaCreacion.toString()}`);
-        console.log(`   Tiempo transcurrido: ${minutosTranscurridos} minutos (${horasTranscurridas.toFixed(2)} horas)`);
         
         // 🎯 Verificar si pasó más de 1 hora
-        const masDeUnaHora = tiempoTranscurrido > (60 * 60 * 1000);
+        return tiempoTranscurrido > (60 * 60 * 1000);
         
-        if (masDeUnaHora) {
-          console.log(`   ⚠️ Pendiente por más de 1 hora: ${horasTranscurridas.toFixed(2)} horas`);
-        }
-        
-        return masDeUnaHora;
       } catch (e) {
         console.error(`Error verificando fecha de creación para reserva ${reserva.id}:`, e);
         return false;
@@ -805,14 +703,11 @@ export default function Reservas() {
 
   // Filtrado de reservas - MEJORADO
   const reservasFiltradas = useMemo(() => {
-    console.log('🔍 Aplicando filtros a reservas activas:', reservasActivas.length);
-    
     let filtradas = [...reservasActivas];
     
     // Filtrar por estado
     if (filtroEstado !== 'todos') {
       filtradas = filtradas.filter(reserva => reserva.estado === filtroEstado);
-      console.log('   Después de filtrar por estado:', filtradas.length);
     }
     
     // Filtrar por fecha
@@ -844,7 +739,6 @@ export default function Reservas() {
           return true;
         }
       });
-      console.log('   Después de filtrar por fecha:', filtradas.length);
     }
     
     // Filtrar por tipo de pista
@@ -853,10 +747,8 @@ export default function Reservas() {
         const tipoPista = reserva.pistaTipo || reserva.pistas?.tipo || '';
         return tipoPista.toLowerCase().includes(filtroTipo.toLowerCase());
       });
-      console.log('   Después de filtrar por tipo:', filtradas.length);
     }
     
-    console.log('✅ Total después de filtrar:', filtradas.length);
     return filtradas;
   }, [reservasActivas, filtroEstado, filtroFecha, filtroTipo]);
 
@@ -947,12 +839,6 @@ export default function Reservas() {
 
   // Calcular estadísticas
   const totalReservas = reservasActivas.length + reservasConfirmadas.length + reservasHistorial.length;
-
-  console.log('🎯 Estado actual del componente:');
-  console.log('   Activas:', reservasActivas.length);
-  console.log('   Confirmadas:', reservasConfirmadas.length);
-  console.log('   Historial:', reservasHistorial.length);
-  console.log('   Pendientes expiradas:', reservasPendientesExpiradas.length);
 
   return (
     <div className="reservas-container">
@@ -1325,55 +1211,70 @@ export default function Reservas() {
           )}
         </div>
 
-        {/* ========== HISTORIAL DE RESERVAS (AL FINAL) ========== */}
+        {/* ========== HISTORIAL DE RESERVAS (COLAPSABLE/EXPANDIBLE) ========== */}
         {reservasHistorial.length > 0 && (
           <div className="reservas-section historial-section">
-            <div className="section-header">
-              <h2>Historial</h2>
-              <span className="badge-count badge-historial">{reservasHistorial.length}</span>
+            <div 
+              className="section-header historial-header"
+              onClick={() => setHistorialDesplegado(!historialDesplegado)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="historial-title-container">
+                <h2>Historial de Reservas</h2>
+                <span className="badge-count badge-historial">{reservasHistorial.length}</span>
+                <span className="historial-toggle-icon">
+                  {historialDesplegado ? '▼' : '►'}
+                </span>
+              </div>
+              <p className="section-subtitle">
+                Haz clic para {historialDesplegado ? 'ocultar' : 'mostrar'} el historial
+              </p>
             </div>
             
-            <div className="historial-container">
-              {reservasHistorial.map((reserva) => (
-                <div key={`hist-${reserva.id}`} className="historial-item">
-                  <div className="historial-content">
-                    <div className="historial-header">
-                      <span className="historial-fecha">
-                        {formatearFecha(reserva.fecha)}
-                      </span>
-                      <span className={`historial-estado ${reserva.estado}`}>
-                        {reserva.estado === 'cancelada' ? '❌ Cancelada' : '📅 Pasada'}
-                        {reserva.motivo_cancelacion && reserva.estado === 'cancelada' && (
-                          <span className="motivo-cancelacion"> ({reserva.motivo_cancelacion})</span>
-                        )}
-                      </span>
+            {/* Contenido del historial (solo visible si está desplegado) */}
+            {historialDesplegado && (
+              <div className="historial-container">
+                {reservasHistorial.map((reserva) => (
+                  <div key={`hist-${reserva.id}`} className="historial-item">
+                    <div className="historial-content">
+                      <div className="historial-header">
+                        <span className="historial-fecha">
+                          {formatearFecha(reserva.fecha)}
+                        </span>
+                        <span className={`historial-estado ${reserva.estado}`}>
+                          {reserva.estado === 'cancelada' ? '❌ Cancelada' : '📅 Pasada'}
+                          {reserva.motivo_cancelacion && reserva.estado === 'cancelada' && (
+                            <span className="motivo-cancelacion"> ({reserva.motivo_cancelacion})</span>
+                          )}
+                        </span>
+                      </div>
+                      
+                      <div className="historial-info">
+                        <span className="historial-pista">
+                          {reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}
+                        </span>
+                        <span className="historial-polideportivo">
+                          • {reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}
+                        </span>
+                      </div>
+                      
+                      <div className="historial-detalles">
+                        <span className="historial-horario">{reserva.hora_inicio} - {reserva.hora_fin}</span>
+                        <span className="historial-precio">• €{parseFloat(reserva.precio || 0).toFixed(2)}</span>
+                        {reserva.ludoteca && <span className="historial-ludoteca">• 🧸 Ludoteca</span>}
+                      </div>
                     </div>
                     
-                    <div className="historial-info">
-                      <span className="historial-pista">
-                        {reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}
-                      </span>
-                      <span className="historial-polideportivo">
-                        • {reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}
-                      </span>
-                    </div>
-                    
-                    <div className="historial-detalles">
-                      <span className="historial-horario">{reserva.hora_inicio} - {reserva.hora_fin}</span>
-                      <span className="historial-precio">• €{parseFloat(reserva.precio || 0).toFixed(2)}</span>
-                      {reserva.ludoteca && <span className="historial-ludoteca">• 🧸 Ludoteca</span>}
-                    </div>
+                    <button 
+                      className="btn-ver-historial"
+                      onClick={() => irADetalles(reserva)}
+                    >
+                      Ver
+                    </button>
                   </div>
-                  
-                  <button 
-                    className="btn-ver-historial"
-                    onClick={() => irADetalles(reserva)}
-                  >
-                    Ver
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

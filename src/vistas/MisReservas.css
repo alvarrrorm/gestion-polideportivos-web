@@ -854,7 +854,7 @@
   }
 }
 
-/* MisReservas.css */
+
 
 /* Flecha para volver atrás */
 .header-with-back {
@@ -1495,5 +1495,194 @@
   .btn-cancelar-card {
     align-self: flex-end;
     margin-top: -35px;
+  }
+}
+
+/* ========== HISTORIAL COLAPSABLE ========== */
+
+/* Header del historial (clicable) */
+.historial-header {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px 20px;
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+}
+
+.historial-header:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.historial-title-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.historial-toggle-icon {
+  font-size: 18px;
+  color: #6c757d;
+  transition: transform 0.3s ease;
+  margin-left: 10px;
+}
+
+.historial-header:hover .historial-toggle-icon {
+  color: #495057;
+}
+
+/* Contenedor del historial con animación */
+.historial-container {
+  max-height: 500px;
+  overflow-y: auto;
+  animation: slideDown 0.3s ease-out;
+  margin-top: 10px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+/* Animación para desplegar */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    transform: translateY(0);
+  }
+}
+
+/* Items del historial */
+.historial-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.historial-item:last-child {
+  border-bottom: none;
+}
+
+.historial-item:hover {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.historial-content {
+  flex-grow: 1;
+  margin-right: 15px;
+}
+
+.historial-pista {
+  font-weight: 600;
+  color: #333;
+}
+
+.historial-polideportivo {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.historial-detalles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.historial-estado {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.historial-estado.cancelada {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.historial-estado.pasada {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.motivo-cancelacion {
+  font-style: italic;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Botón ver historial */
+.btn-ver-historial {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-ver-historial:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+}
+
+/* Estilo para cuando el historial está colapsado */
+.historial-section .section-subtitle {
+  color: #6c757d;
+  font-size: 13px;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* Scrollbar personalizado para el historial */
+.historial-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.historial-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.historial-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.historial-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .historial-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .btn-ver-historial {
+    align-self: flex-end;
+  }
+  
+  .historial-detalles {
+    flex-direction: column;
+    gap: 5px;
   }
 }
