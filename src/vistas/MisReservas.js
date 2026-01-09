@@ -1073,7 +1073,6 @@ export default function Reservas() {
                 <option value="tenis">Tenis</option>
                 <option value="baloncesto">Baloncesto</option>
                 <option value="futbol">Fútbol</option>
-                <option value="piscina">Piscina</option>
               </select>
             </div>
             
@@ -1090,15 +1089,113 @@ export default function Reservas() {
           </div>
         )}
 
-        {/* Sección de reservas activas */}
-        <div className="reservas-section">
+        {/* ========== SECCIÓN DE RESERVAS CONFIRMADAS (EN PRIMER LUGAR) ========== */}
+        {reservasConfirmadas.length > 0 && (
+          <div className="reservas-section confirmadas-section">
+            <div className="section-header">
+              <h2>Reservas Confirmadas</h2>
+              <span className="badge-count badge-confirmada">{reservasConfirmadas.length}</span>
+            </div>
+            
+            <p className="section-subtitle">
+              Reservas confirmadas y listas para disfrutar
+            </p>
+            
+            <div className="reservas-grid">
+              {reservasConfirmadas.map((reserva) => {
+                // Verificar si se puede cancelar
+                const puedeCancelar = puedeCancelarReserva(reserva);
+                const mensajeNoCancelacion = getMensajeCancelacionNoDisponible(reserva);
+                
+                return (
+                  <div 
+                    key={`conf-${reserva.id}`} 
+                    className="reserva-card confirmada"
+                    onClick={() => irADetalles(reserva)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyPress={(e) => e.key === 'Enter' && irADetalles(reserva)}
+                  >
+                    <div className="card-header">
+                      <div className="card-badge confirmada-badge">
+                        ✅ Confirmada
+                      </div>
+                      {puedeCancelar ? (
+                        <button 
+                          className="btn-cancelar-card"
+                          onClick={(e) => handleCancelar(reserva.id, e)}
+                          title="Cancelar reserva confirmada"
+                          aria-label="Cancelar reserva confirmada"
+                          disabled={cancelando[reserva.id]}
+                        >
+                          {cancelando[reserva.id] ? '⏳' : '✕'}
+                        </button>
+                      ) : (
+                        <div className="no-cancelar-card" title="No se puede cancelar (menos de 2 horas de antelación)">
+                          🔒
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="card-content">
+                      {/* Mostrar mensaje si no se puede cancelar */}
+                      {!puedeCancelar && mensajeNoCancelacion && (
+                        <div className="no-cancelacion-alerta">
+                          ⚠️ {mensajeNoCancelacion}
+                        </div>
+                      )}
+                      
+                      <h3 className="pista-nombre">{reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}</h3>
+                      <p className="pista-tipo">
+                        {reserva.pistaTipo || reserva.pistas?.tipo || 'Sin especificar'}
+                        {reserva.ludoteca && <span className="ludoteca-badge"> 🧸 Ludoteca</span>}
+                      </p>
+                      
+                      <div className="info-row">
+                        <span className="info-icon">📍</span>
+                        <span className="info-text">{reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}</span>
+                      </div>
+                      
+                      <div className="info-row">
+                        <span className="info-icon">📅</span>
+                        <span className="info-text">{formatearFechaParaTarjeta(reserva.fecha, reserva.hora_inicio)}</span>
+                      </div>
+                      
+                      <div className="info-row">
+                        <span className="info-icon">🕒</span>
+                        <span className="info-text">{reserva.hora_inicio} - {reserva.hora_fin}</span>
+                      </div>
+                      
+                      <div className="precio-container">
+                        <span className="precio-label">Precio:</span>
+                        <span className="precio">€{parseFloat(reserva.precio || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="card-footer">
+                      <button 
+                        className="btn-ver-detalles"
+                        onClick={() => irADetalles(reserva)}
+                      >
+                        🔍 Ver Detalles
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ========== SECCIÓN DE RESERVAS ACTIVAS (PENDIENTES - DEBAJO DE CONFIRMADAS) ========== */}
+        <div className="reservas-section activas-section">
           <div className="section-header">
-            <h2>Reservas Activas</h2>
+            <h2>Reservas Pendientes</h2>
             <span className="badge-count">{reservasFiltradas.length}</span>
           </div>
           
           <p className="section-subtitle">
-            Próximas reservas pendientes de confirmar o pagar
+            Reservas pendientes de confirmar o pagar
             {reservasPendientesExpiradas.length > 0 && (
               <span className="expiracion-info">
                 ⏰ {reservasPendientesExpiradas.length} pendiente(s) se cancelarán automáticamente pronto
@@ -1120,7 +1217,7 @@ export default function Reservas() {
           ) : reservasFiltradas.length === 0 && filtroEstado === 'todos' && filtroFecha === 'todas' && filtroTipo === 'todos' ? (
             <div className="empty-state">
               <div className="empty-icon">✅</div>
-              <p>No tienes reservas activas</p>
+              <p>No tienes reservas pendientes</p>
               <p className="empty-subtext">Todas tus reservas están confirmadas o en el historial</p>
             </div>
           ) : reservasFiltradas.length === 0 ? (
@@ -1155,51 +1252,25 @@ export default function Reservas() {
                     onKeyPress={(e) => e.key === 'Enter' && irADetalles(reserva)}
                   >
                     <div className="card-header">
-                      <div className="card-badge">
-                        {reserva.estado === 'pendiente' ? '⏳ Pendiente' : '✅ Confirmada'}
+                      <div className="card-badge pendiente-badge">
+                        ⏳ Pendiente
                         {estaPorExpiar && <span className="expiracion-badge"> ⏰</span>}
                       </div>
-                      {reserva.estado === 'pendiente' ? (
-                        <button 
-                          className="btn-cancelar-card"
-                          onClick={(e) => handleCancelar(reserva.id, e)}
-                          title="Cancelar reserva"
-                          aria-label="Cancelar reserva"
-                          disabled={cancelando[reserva.id]}
-                        >
-                          {cancelando[reserva.id] ? '⏳' : '✕'}
-                        </button>
-                      ) : (
-                        // Para reservas confirmadas, verificar si se puede cancelar
-                        puedeCancelarReserva(reserva) ? (
-                          <button 
-                            className="btn-cancelar-card"
-                            onClick={(e) => handleCancelar(reserva.id, e)}
-                            title="Cancelar reserva confirmada"
-                            aria-label="Cancelar reserva confirmada"
-                            disabled={cancelando[reserva.id]}
-                          >
-                            {cancelando[reserva.id] ? '⏳' : '✕'}
-                          </button>
-                        ) : (
-                          <div className="no-cancelar-card" title="No se puede cancelar (menos de 2 horas de antelación)">
-                            🔒
-                          </div>
-                        )
-                      )}
+                      <button 
+                        className="btn-cancelar-card"
+                        onClick={(e) => handleCancelar(reserva.id, e)}
+                        title="Cancelar reserva"
+                        aria-label="Cancelar reserva"
+                        disabled={cancelando[reserva.id]}
+                      >
+                        {cancelando[reserva.id] ? '⏳' : '✕'}
+                      </button>
                     </div>
                     
                     <div className="card-content">
                       {estaPorExpiar && reserva.estado === 'pendiente' && (
                         <div className="expiracion-alerta">
                           ⚠️ Pendiente por {tiempoDesdeCreacion}. Se cancelará automáticamente pronto.
-                        </div>
-                      )}
-                      
-                      {/* Mostrar mensaje de no cancelación para reservas confirmadas */}
-                      {reserva.estado === 'confirmada' && !puedeCancelarReserva(reserva) && (
-                        <div className="no-cancelacion-alerta">
-                          ⚠️ {getMensajeCancelacionNoDisponible(reserva) || 'No se puede cancelar (menos de 2 horas de antelación)'}
                         </div>
                       )}
                       
@@ -1237,24 +1308,15 @@ export default function Reservas() {
                     </div>
                     
                     <div className="card-footer">
-                      {reserva.estado === 'pendiente' ? (
-                        <button 
-                          className="btn-pagar"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePagar(reserva);
-                          }}
-                        >
-                          💳 Pagar Ahora
-                        </button>
-                      ) : (
-                        <button 
-                          className="btn-ver-detalles"
-                          onClick={() => irADetalles(reserva)}
-                        >
-                          🔍 Ver Detalles
-                        </button>
-                      )}
+                      <button 
+                        className="btn-pagar"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePagar(reserva);
+                        }}
+                      >
+                        💳 Pagar Ahora
+                      </button>
                     </div>
                   </div>
                 );
@@ -1263,72 +1325,7 @@ export default function Reservas() {
           )}
         </div>
 
-        {/* Sección de reservas confirmadas */}
-        {reservasConfirmadas.length > 0 && (
-          <div className="reservas-section">
-            <div className="section-header">
-              <h2>Reservas Confirmadas</h2>
-              <span className="badge-count badge-confirmada">{reservasConfirmadas.length}</span>
-            </div>
-            
-            <div className="confirmadas-container">
-              {reservasConfirmadas.map((reserva) => {
-                // Verificar si se puede cancelar
-                const puedeCancelar = puedeCancelarReserva(reserva);
-                const mensajeNoCancelacion = getMensajeCancelacionNoDisponible(reserva);
-                
-                return (
-                  <div key={`conf-${reserva.id}`} className="confirmada-card">
-                    <div className="confirmada-header">
-                      <span className="confirmada-fecha">
-                        {formatearFecha(reserva.fecha)}
-                      </span>
-                      <span className="confirmada-badge">✅ Confirmada</span>
-                    </div>
-                    
-                    <div className="confirmada-content">
-                      <h4>{reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}</h4>
-                      <p className="confirmada-lugar">
-                        {reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}
-                      </p>
-                      <p className="confirmada-horario">
-                        {reserva.hora_inicio} - {reserva.hora_fin} • €{parseFloat(reserva.precio || 0).toFixed(2)}
-                      </p>
-                      
-                      {/* Mostrar mensaje si no se puede cancelar */}
-                      {!puedeCancelar && mensajeNoCancelacion && (
-                        <div className="confirmada-no-cancelacion">
-                          <small className="no-cancelacion-text">
-                            ⚠️ {mensajeNoCancelacion}
-                          </small>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="confirmada-actions">
-                      <button 
-                        className="btn-ver-confirmada"
-                        onClick={() => irADetalles(reserva)}
-                      >
-                        Ver
-                      </button>
-                      <button 
-                        className={`btn-cancelar-confirmada ${!puedeCancelar ? 'disabled' : ''}`}
-                        onClick={(e) => puedeCancelar ? handleCancelar(reserva.id, e) : null}
-                        title={puedeCancelar ? "Cancelar reserva confirmada" : mensajeNoCancelacion || "No se puede cancelar"}
-                        disabled={cancelando[reserva.id] || !puedeCancelar}
-                      >
-                        {cancelando[reserva.id] ? 'Cancelando...' : 'Cancelar'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Historial de reservas */}
+        {/* ========== HISTORIAL DE RESERVAS (AL FINAL) ========== */}
         {reservasHistorial.length > 0 && (
           <div className="reservas-section historial-section">
             <div className="section-header">
