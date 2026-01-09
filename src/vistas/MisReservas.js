@@ -88,6 +88,61 @@ export default function Reservas() {
     }
   };
 
+  // 👇 NUEVA FUNCIÓN: VERIFICAR SI SE PUEDE CANCELAR (2 HORAS DE ANTELACIÓN)
+  const puedeCancelarReserva = (reserva) => {
+    // Reservas canceladas no se pueden cancelar de nuevo
+    if (reserva.estado === 'cancelada') return false;
+    
+    // Reservas pendientes siempre se pueden cancelar
+    if (reserva.estado === 'pendiente') return true;
+    
+    // Para reservas confirmadas, verificar 2 horas de antelación
+    if (reserva.estado === 'confirmada') {
+      try {
+        // 🎯 Obtener fecha y hora de la reserva
+        const [anio, mes, dia] = reserva.fecha.split('-').map(Number);
+        const [horaStr, minutoStr] = reserva.hora_inicio.split(':');
+        const horas = parseInt(horaStr);
+        const minutos = parseInt(minutoStr || '0');
+        
+        // Crear fecha de inicio de la reserva en zona horaria LOCAL
+        const fechaInicioReserva = new Date(anio, mes - 1, dia, horas, minutos, 0);
+        
+        // Verificar que la fecha sea válida
+        if (isNaN(fechaInicioReserva.getTime())) {
+          console.warn(`⚠️ Fecha inválida para reserva ${reserva.id}`);
+          return false;
+        }
+        
+        // 🎯 Obtener hora actual
+        const ahora = new Date();
+        
+        // 🎯 Calcular 2 horas antes de la reserva
+        const dosHorasAntes = new Date(fechaInicioReserva.getTime() - (2 * 60 * 60 * 1000));
+        
+        // 🎯 Verificar si estamos a menos de 2 horas de la reserva
+        const esMenosDe2HorasAntes = ahora >= dosHorasAntes;
+        
+        console.log(`⏰ Verificación cancelación reserva ${reserva.id}:`, {
+          ahora: ahora.toString(),
+          inicioReserva: fechaInicioReserva.toString(),
+          dosHorasAntes: dosHorasAntes.toString(),
+          diferenciaHoras: (fechaInicioReserva.getTime() - ahora.getTime()) / (1000 * 60 * 60),
+          puedeCancelar: !esMenosDe2HorasAntes
+        });
+        
+        // Si estamos a menos de 2 horas, NO se puede cancelar
+        return !esMenosDe2HorasAntes;
+        
+      } catch (e) {
+        console.error(`❌ Error verificando cancelación para reserva ${reserva.id}:`, e);
+        return false; // En caso de error, no permitir cancelar
+      }
+    }
+    
+    return false;
+  };
+
   // 👇 FUNCIÓN MEJORADA PARA CANCELAR RESERVAS (PENDIENTES Y CONFIRMADAS)
   const handleCancelar = async (reservaId, e) => {
     e.stopPropagation();
@@ -98,6 +153,16 @@ export default function Reservas() {
     
     if (!reserva) {
       alert('❌ No se encontró la reserva');
+      return;
+    }
+    
+    // 🎯 VERIFICAR SI SE PUEDE CANCELAR (2 HORAS DE ANTELACIÓN)
+    if (!puedeCancelarReserva(reserva)) {
+      if (reserva.estado === 'confirmada') {
+        alert(`❌ No puedes cancelar esta reserva confirmada.\n\nYa estás a menos de 2 horas del inicio de la reserva.\n\n📅 Fecha: ${reserva.fecha}\n⏰ Hora: ${reserva.hora_inicio}\n\nPara cualquier incidencia, contacta con la administración.`);
+      } else {
+        alert('❌ Esta reserva no se puede cancelar en este momento.');
+      }
       return;
     }
     
@@ -664,6 +729,68 @@ export default function Reservas() {
     }
   };
 
+  // 👇 NUEVA FUNCIÓN: OBTENER TIEMPO RESTANTE HASTA LA RESERVA (para confirmadas)
+  const getTiempoRestanteHastaReserva = (reserva) => {
+    try {
+      // Solo para reservas confirmadas
+      if (reserva.estado !== 'confirmada') return null;
+      
+      // 🎯 Obtener fecha y hora de la reserva
+      const [anio, mes, dia] = reserva.fecha.split('-').map(Number);
+      const [horaStr, minutoStr] = reserva.hora_inicio.split(':');
+      const horas = parseInt(horaStr);
+      const minutos = parseInt(minutoStr || '0');
+      
+      // Crear fecha de inicio de la reserva en zona horaria LOCAL
+      const fechaInicioReserva = new Date(anio, mes - 1, dia, horas, minutos, 0);
+      
+      // Verificar que la fecha sea válida
+      if (isNaN(fechaInicioReserva.getTime())) {
+        console.warn(`⚠️ Fecha inválida para reserva ${reserva.id}`);
+        return null;
+      }
+      
+      // 🎯 Obtener hora actual
+      const ahora = new Date();
+      
+      // 🎯 Calcular tiempo restante
+      const diferenciaMs = fechaInicioReserva.getTime() - ahora.getTime();
+      
+      // Si ya pasó, retornar null
+      if (diferenciaMs <= 0) return null;
+      
+      // Convertir a horas y minutos
+      const horasRestantes = Math.floor(diferenciaMs / (1000 * 60 * 60));
+      const minutosRestantes = Math.floor((diferenciaMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      return { horas: horasRestantes, minutos: minutosRestantes };
+      
+    } catch (e) {
+      console.error(`❌ Error calculando tiempo restante para reserva ${reserva.id}:`, e);
+      return null;
+    }
+  };
+
+  // 👇 FUNCIÓN: OBTENER MENSAJE DE CANCELACIÓN (si no se puede cancelar)
+  const getMensajeCancelacionNoDisponible = (reserva) => {
+    if (reserva.estado !== 'confirmada') return null;
+    
+    const tiempoRestante = getTiempoRestanteHastaReserva(reserva);
+    
+    if (!tiempoRestante) return null;
+    
+    // Si faltan menos de 2 horas, mostrar mensaje
+    if (tiempoRestante.horas < 2) {
+      if (tiempoRestante.horas === 0) {
+        return `Faltan ${tiempoRestante.minutos} minutos. No se puede cancelar.`;
+      } else if (tiempoRestante.horas === 1) {
+        return `Falta 1 hora y ${tiempoRestante.minutos} minutos. No se puede cancelar.`;
+      }
+    }
+    
+    return null;
+  };
+
   const irADetalles = (reserva) => {
     navigate(`/resumen-reserva?reserva=${encodeURIComponent(JSON.stringify(reserva))}`);
   };
@@ -1032,21 +1159,47 @@ export default function Reservas() {
                         {reserva.estado === 'pendiente' ? '⏳ Pendiente' : '✅ Confirmada'}
                         {estaPorExpiar && <span className="expiracion-badge"> ⏰</span>}
                       </div>
-                      <button 
-                        className="btn-cancelar-card"
-                        onClick={(e) => handleCancelar(reserva.id, e)}
-                        title="Cancelar reserva"
-                        aria-label="Cancelar reserva"
-                        disabled={cancelando[reserva.id]}
-                      >
-                        {cancelando[reserva.id] ? '⏳' : '✕'}
-                      </button>
+                      {reserva.estado === 'pendiente' ? (
+                        <button 
+                          className="btn-cancelar-card"
+                          onClick={(e) => handleCancelar(reserva.id, e)}
+                          title="Cancelar reserva"
+                          aria-label="Cancelar reserva"
+                          disabled={cancelando[reserva.id]}
+                        >
+                          {cancelando[reserva.id] ? '⏳' : '✕'}
+                        </button>
+                      ) : (
+                        // Para reservas confirmadas, verificar si se puede cancelar
+                        puedeCancelarReserva(reserva) ? (
+                          <button 
+                            className="btn-cancelar-card"
+                            onClick={(e) => handleCancelar(reserva.id, e)}
+                            title="Cancelar reserva confirmada"
+                            aria-label="Cancelar reserva confirmada"
+                            disabled={cancelando[reserva.id]}
+                          >
+                            {cancelando[reserva.id] ? '⏳' : '✕'}
+                          </button>
+                        ) : (
+                          <div className="no-cancelar-card" title="No se puede cancelar (menos de 2 horas de antelación)">
+                            🔒
+                          </div>
+                        )
+                      )}
                     </div>
                     
                     <div className="card-content">
                       {estaPorExpiar && reserva.estado === 'pendiente' && (
                         <div className="expiracion-alerta">
                           ⚠️ Pendiente por {tiempoDesdeCreacion}. Se cancelará automáticamente pronto.
+                        </div>
+                      )}
+                      
+                      {/* Mostrar mensaje de no cancelación para reservas confirmadas */}
+                      {reserva.estado === 'confirmada' && !puedeCancelarReserva(reserva) && (
+                        <div className="no-cancelacion-alerta">
+                          ⚠️ {getMensajeCancelacionNoDisponible(reserva) || 'No se puede cancelar (menos de 2 horas de antelación)'}
                         </div>
                       )}
                       
@@ -1119,43 +1272,58 @@ export default function Reservas() {
             </div>
             
             <div className="confirmadas-container">
-              {reservasConfirmadas.map((reserva) => (
-                <div key={`conf-${reserva.id}`} className="confirmada-card">
-                  <div className="confirmada-header">
-                    <span className="confirmada-fecha">
-                      {formatearFecha(reserva.fecha)}
-                    </span>
-                    <span className="confirmada-badge">✅ Confirmada</span>
+              {reservasConfirmadas.map((reserva) => {
+                // Verificar si se puede cancelar
+                const puedeCancelar = puedeCancelarReserva(reserva);
+                const mensajeNoCancelacion = getMensajeCancelacionNoDisponible(reserva);
+                
+                return (
+                  <div key={`conf-${reserva.id}`} className="confirmada-card">
+                    <div className="confirmada-header">
+                      <span className="confirmada-fecha">
+                        {formatearFecha(reserva.fecha)}
+                      </span>
+                      <span className="confirmada-badge">✅ Confirmada</span>
+                    </div>
+                    
+                    <div className="confirmada-content">
+                      <h4>{reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}</h4>
+                      <p className="confirmada-lugar">
+                        {reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}
+                      </p>
+                      <p className="confirmada-horario">
+                        {reserva.hora_inicio} - {reserva.hora_fin} • €{parseFloat(reserva.precio || 0).toFixed(2)}
+                      </p>
+                      
+                      {/* Mostrar mensaje si no se puede cancelar */}
+                      {!puedeCancelar && mensajeNoCancelacion && (
+                        <div className="confirmada-no-cancelacion">
+                          <small className="no-cancelacion-text">
+                            ⚠️ {mensajeNoCancelacion}
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="confirmada-actions">
+                      <button 
+                        className="btn-ver-confirmada"
+                        onClick={() => irADetalles(reserva)}
+                      >
+                        Ver
+                      </button>
+                      <button 
+                        className={`btn-cancelar-confirmada ${!puedeCancelar ? 'disabled' : ''}`}
+                        onClick={(e) => puedeCancelar ? handleCancelar(reserva.id, e) : null}
+                        title={puedeCancelar ? "Cancelar reserva confirmada" : mensajeNoCancelacion || "No se puede cancelar"}
+                        disabled={cancelando[reserva.id] || !puedeCancelar}
+                      >
+                        {cancelando[reserva.id] ? 'Cancelando...' : 'Cancelar'}
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="confirmada-content">
-                    <h4>{reserva.pistaNombre || reserva.pistas?.nombre || `Pista ${reserva.pista_id}`}</h4>
-                    <p className="confirmada-lugar">
-                      {reserva.polideportivo_nombre || reserva.polideportivos?.nombre || `Polideportivo ${reserva.polideportivo_id}`}
-                    </p>
-                    <p className="confirmada-horario">
-                      {reserva.hora_inicio} - {reserva.hora_fin} • €{parseFloat(reserva.precio || 0).toFixed(2)}
-                    </p>
-                  </div>
-                  
-                  <div className="confirmada-actions">
-                    <button 
-                      className="btn-ver-confirmada"
-                      onClick={() => irADetalles(reserva)}
-                    >
-                      Ver
-                    </button>
-                    <button 
-                      className="btn-cancelar-confirmada"
-                      onClick={(e) => handleCancelar(reserva.id, e)}
-                      title="Cancelar reserva confirmada"
-                      disabled={cancelando[reserva.id]}
-                    >
-                      {cancelando[reserva.id] ? 'Cancelando...' : 'Cancelar'}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

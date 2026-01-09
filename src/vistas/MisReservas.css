@@ -1177,3 +1177,82 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Estilos para botones desactivados */
+.btn-cancelar-card.disabled,
+.btn-cancelar-confirmada.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #cccccc !important;
+  color: #666666 !important;
+}
+
+/* Icono de candado para no cancelar */
+.no-cancelar-card {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  color: #888;
+  cursor: not-allowed;
+  font-size: 14px;
+}
+
+/* Mensaje de no cancelación */
+.no-cancelacion-alerta {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 5px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirmada-no-cancelacion {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #ffc107;
+}
+
+.no-cancelacion-text {
+  color: #856404;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Estilos para botones deshabilitados */
+.btn-cancelar-confirmada.disabled {
+  background-color: #e9ecef;
+  color: #adb5bd;
+  border: 1px solid #dee2e6;
+  cursor: not-allowed;
+}
+
+.btn-cancelar-confirmada.disabled:hover {
+  background-color: #e9ecef;
+  color: #adb5bd;
+}
+
+/* Ajustes para las tarjetas de reserva */
+.reserva-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Información adicional en confirmadas */
+.confirmada-content .no-cancelacion-text:before {
+  content: "⚠️";
+  margin-right: 4px;
+}
