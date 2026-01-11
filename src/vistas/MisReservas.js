@@ -854,7 +854,16 @@ export default function Reservas() {
           <span className="back-text">Volver</span>
         </button>
         
-       
+        <div className="header-content-main">
+          <h1>Mis Reservas</h1>
+          <p className="subtitulo">
+            Gestiona tus próximas reservas y consulta el historial
+          </p>
+          <div className="user-info">
+            <small>Bienvenido, {usuario}</small>
+            <small>Total reservas: {totalReservas}</small>
+          </div>
+        </div>
       </div>
 
       {/* ADVERTENCIA SOBRE RESERVAS PENDIENTES CON MÁS DE 1 HORA */}
