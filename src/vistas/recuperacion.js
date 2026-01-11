@@ -18,7 +18,6 @@ export default function RecuperarPassword() {
   const [screenSize, setScreenSize] = useState('medium');
   const [tiempoReenvio, setTiempoReenvio] = useState(0);
   const [usuarioInfo, setUsuarioInfo] = useState(null);
-  const [emailEnviado, setEmailEnviado] = useState(false);
 
   const codigoRef = useRef();
   const nuevaPasswordRef = useRef();
@@ -143,25 +142,31 @@ export default function RecuperarPassword() {
         body: JSON.stringify({ email }),
       });
 
-      console.log('📨 Respuesta del servidor:', data);
+      console.log('📨 Respuesta del servidor:', {
+        status: response.status,
+        ok: response.ok,
+        data: data
+      });
 
-      if (response.ok && data.success) {
+      if (response.status === 404 || (data && data.emailNotFound)) {
+        // CASO 1: Email no encontrado (404)
+        setMensajeError(data?.error || 'El correo electrónico no está registrado en nuestro sistema');
+      } else if (response.ok && data.success) {
+        // CASO 2: Email encontrado, código enviado
         setMensajeExito(data.message || 'Se ha enviado un código de verificación a tu correo electrónico');
         setPasoActual(2);
         setTiempoReenvio(60); // 60 segundos para reenvío
-        setEmailEnviado(true);
         
         // Mostrar código en desarrollo para testing
         if (data.debug && data.debug.codigo) {
           console.log('🔐 Código de desarrollo:', data.debug.codigo);
         }
+      } else if (!response.ok) {
+        // CASO 3: Otro error del servidor
+        setMensajeError(data?.error || `Error del servidor (${response.status})`);
       } else {
-        // Verificar si es un error 404 (email no encontrado)
-        if (response.status === 404 || data.emailNotFound) {
-          setMensajeError(data.error || 'El correo electrónico no está registrado en nuestro sistema');
-        } else {
-          setMensajeError(data.error || 'Error al solicitar el código de recuperación');
-        }
+        // CASO 4: Respuesta inesperada
+        setMensajeError('Respuesta inesperada del servidor');
       }
     } catch (error) {
       console.error('❌ Error de conexión:', error);
@@ -308,7 +313,12 @@ export default function RecuperarPassword() {
 
       console.log('📨 Respuesta reenvío:', data);
 
-      if (response.ok && data.success) {
+      if (response.status === 404 || (data && data.emailNotFound)) {
+        // Email no encontrado
+        setMensajeError(data?.error || 'El correo electrónico no está registrado en nuestro sistema');
+        // Volver al paso 1
+        setPasoActual(1);
+      } else if (response.ok && data.success) {
         setMensajeExito(data.message || 'Se ha reenviado el código de verificación a tu correo electrónico');
         setTiempoReenvio(60); // Reiniciar temporizador
         
@@ -317,15 +327,7 @@ export default function RecuperarPassword() {
           console.log('🔐 Nuevo código de desarrollo:', data.debug.codigo);
         }
       } else {
-        // Verificar si es un error 404 (email no encontrado)
-        if (response.status === 404 || data.emailNotFound) {
-          setMensajeError(data.error || 'El correo electrónico no está registrado en nuestro sistema');
-          // Volver al paso 1 si el email no existe
-          setPasoActual(1);
-          setEmailEnviado(false);
-        } else {
-          setMensajeError(data.error || 'Error al reenviar el código');
-        }
+        setMensajeError(data.error || 'Error al reenviar el código');
       }
     } catch (error) {
       console.error('❌ Error de conexión:', error);
@@ -346,10 +348,6 @@ export default function RecuperarPassword() {
       // Limpiar información del usuario al volver
       if (pasoActual === 3) {
         setUsuarioInfo(null);
-      }
-      // Si volvemos al paso 1, resetear el estado de email enviado
-      if (pasoActual === 2) {
-        setEmailEnviado(false);
       }
     }
   };
@@ -406,9 +404,7 @@ export default function RecuperarPassword() {
   const getSubtitulo = () => {
     switch (pasoActual) {
       case 1: return 'Ingresa tu correo para recibir un código de verificación';
-      case 2: return emailEnviado 
-        ? `Se ha enviado un código de 6 dígitos a ${formData.email}`
-        : `Ingresa el código de 6 dígitos enviado a ${formData.email}`;
+      case 2: return `Ingresa el código de 6 dígitos enviado a ${formData.email}`;
       case 3: return usuarioInfo 
         ? `Creando nueva contraseña para ${usuarioInfo.nombre || usuarioInfo.username}`
         : 'Crea una nueva contraseña para tu cuenta';
